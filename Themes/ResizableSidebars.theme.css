@@ -1,0 +1,48 @@
+/**
+ * @name Resizable Sidebars
+ * @description Allows resizing the channel/DM list and the server member list
+ * @author Qb
+ * @version 1.0.0
+ * @authorLink https://github.com/QbDesu
+ * @authorId 133659541198864384
+ * @source https://github.com/QbDesu/BetterDiscordAddons
+ * @updateUrl https://raw.githubusercontent.com/QbDesu/BetterDiscordAddons/potato/Themes/ResizableSidebars.theme.css
+ * @invite 2R56HhWf
+ */
+
+:root {
+    --sidebar-initial-width: 240px;
+    --memberlist-initial-width: 240px;
+}
+
+.sidebar-2K8pFh {
+    resize: horizontal;
+    width: var(--sidebar-initial-width);
+}
+
+.sidebar-2K8pFh .channel-2QD9_O {
+    max-width: unset;
+}
+
+.bannerImage-3KhIJ6 {
+    width: 100%;
+}
+
+.membersWrap-2h-GB4 {
+    min-width: 8px;
+}
+
+.membersWrap-2h-GB4 .members-1998pB {
+    resize: horizontal;
+    direction: rtl;
+    width: var(--memberlist-initial-width);
+}
+
+.membersWrap-2h-GB4 .members-1998pB .content-3YMskv {
+    margin-left: -8px;
+    direction: ltr;
+}
+
+.membersWrap-2h-GB4 .members-1998pB .content-3YMskv .member-3-YXUe {
+    max-width: unset;
+}
