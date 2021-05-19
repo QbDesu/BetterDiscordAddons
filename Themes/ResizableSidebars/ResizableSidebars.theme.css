@@ -1,6 +1,6 @@
 /**
  * @name Resizable Sidebars
- * @description Allows resizing the channel/DM list and the server member list
+ * @description Allows resizing the channel/DM list, search results, and server member list
  * @author Qb
  * @version 1.0.0
  * @authorLink https://github.com/QbDesu
@@ -13,7 +13,10 @@
 :root {
     --sidebar-initial-width: 240px;
     --memberlist-initial-width: 240px;
+    --searchresults-initial-width: 418px;
 }
+
+/* Channels/DMs List */
 
 .sidebar-2K8pFh {
     resize: horizontal;
@@ -28,6 +31,8 @@
     width: 100%;
 }
 
+/* Server Members */
+
 .membersWrap-2h-GB4 {
     min-width: 8px;
 }
@@ -38,11 +43,25 @@
     width: var(--memberlist-initial-width);
 }
 
+.membersWrap-2h-GB4 .members-1998pB > * {
+    direction: ltr;
+}
+
 .membersWrap-2h-GB4 .members-1998pB .content-3YMskv {
     margin-left: -8px;
-    direction: ltr;
 }
 
 .membersWrap-2h-GB4 .members-1998pB .content-3YMskv .member-3-YXUe {
     max-width: unset;
+}
+
+/* Search Results */
+
+.searchResultsWrap-3-pOjs {
+    width: var(--searchresults-initial-width);
+    resize: horizontal;
+    direction: rtl;
+}
+.searchResultsWrap-3-pOjs > * {
+    direction: ltr;
 }
