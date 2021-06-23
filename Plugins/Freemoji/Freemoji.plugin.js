@@ -45,7 +45,7 @@ module.exports = (() => {
                     github_username: "respecting"
                 }
             ],
-            version: "1.0.0",
+            version: "1.1.0",
             description: "Send emoji without Nitro.",
             github: "https://github.com/QbDesu/BetterDiscordAddons/blob/potato/Plugins/Freemoji",
             github_raw: "https://raw.githubusercontent.com/QbDesu/BetterDiscordAddons/potato/Plugins/Freemoji/Freemoji.plugin.js"
@@ -85,15 +85,21 @@ module.exports = (() => {
             return class Freemoji extends Plugin {
                 defaultSettings = {
                     "emojiSize": "40",
-                    "emojiBypass": true,
+                    "emojiRemoveGrayscale": true,
                 };
                 settings = PluginUtilities.loadSettings(this.getName(), this.defaultSettings);
                 originalNitroStatus = 0;
+                css = `
+                .emojiItemDisabled-1FvFuF {
+                    filter: grayscale(0%);
+                }
+                `;
+
                 getSettingsPanel() {
                     return Settings.SettingPanel.build(_ => this.saveAndUpdate(), ...[
                         new Settings.SettingGroup("Emojis").append(
-                            new Settings.Switch("Nitro Emotes Bypass", "Enable or disable using the Nitro Emote bypass.", this.settings.emojiBypass, value => this.settings.emojiBypass = value),
-                            new Settings.Slider("Size", "The size of the emoji in pixels. 40 is recommended.", 16, 64, this.settings.emojiSize, size=>this.settings.emojiSize = size, {markers:[16,20,32,40,64], stickToMarkers:true})
+                            new Settings.Slider("Size", "The size of the emoji in pixels. 40 is recommended.", 16, 64, this.settings.emojiSize, size=>this.settings.emojiSize = size, {markers:[16,20,32,40,64], stickToMarkers:true}),
+                            new Settings.Switch("Remove Grayscale Filter", "Remove the grayscale filter on emoji that would normally not be usable.", this.settings.emojiRemoveGrayscale, value => this.settings.emojiRemoveGrayscale = value),
                         )
                     ])
                 }
@@ -101,35 +107,39 @@ module.exports = (() => {
                 saveAndUpdate() {
                     PluginUtilities.saveSettings(this.getName(), this.settings)
 
-                    if (this.settings.emojiBypass) {
-                        //fix emotes with bad method
-                        Patcher.before(DiscordModules.MessageActions, "sendMessage", (_, [, msg]) => {
-                            msg.validNonShortcutEmojis.forEach(emoji => {
-                                if (emoji.url.startsWith("/assets/")) return;
-                                msg.content = msg.content.replace(`<${emoji.animated ? "a" : ""}${emoji.allNamesString.replace(/~\d/g, "")}${emoji.id}>`, emoji.url + `&size=${this.settings.emojiSize} `)
-                            })
+                    //fix emotes with bad method
+                    Patcher.before(DiscordModules.MessageActions, "sendMessage", (_, [, msg]) => {
+                        msg.validNonShortcutEmojis.forEach(emoji => {
+                            if (emoji.url.startsWith("/assets/")) return;
+                            msg.content = msg.content.replace(`<${emoji.animated ? "a" : ""}${emoji.allNamesString.replace(/~\d/g, "")}${emoji.id}>`, emoji.url + `&size=${this.settings.emojiSize} `)
+                        })
+                    });
+                    //for editing message also
+                    Patcher.before(DiscordModules.MessageActions, "editMessage", (_,obj) => {
+                        let msg = obj[2].content;
+                        if (msg.search(/\d{18}/g) == -1) return;
+                        msg.match(/<a:.+?:\d{18}>|<:.+?:\d{18}>/g).forEach(idfkAnymore=>{
+                            obj[2].content = obj[2].content.replace(idfkAnymore, `https://cdn.discordapp.com/emojis/${idfkAnymore.match(/\d{18}/g)[0]}?size=${this.settings.emojiSize}`);
                         });
-                        //for editing message also
-                        Patcher.before(DiscordModules.MessageActions, "editMessage", (_,obj) => {
-                            let msg = obj[2].content
-                            if (msg.search(/\d{18}/g) == -1) return;
-                            msg.match(/<a:.+?:\d{18}>|<:.+?:\d{18}>/g).forEach(idfkAnymore=>{
-                                obj[2].content = obj[2].content.replace(idfkAnymore, `https://cdn.discordapp.com/emojis/${idfkAnymore.match(/\d{18}/g)[0]}?size=${this.settings.emojiSize}`)
-                            })
-                        });
+                    });
+
+                    if (this.settings.emojiRemoveGrayscale && !document.getElementById(`${config.info.name}--grayscale`)){
+                        PluginUtilities.addStyle(`${config.info.name}--grayscale`, this.css);
+                    } else {
+                        PluginUtilities.removeStyle(`${config.info.name}--grayscale`);
                     }
-                    if(!this.settings.emojiBypass) Patcher.unpatchAll(DiscordModules.MessageActions)
                 }
 
                 onStart() {
                     this.originalNitroStatus = DiscordAPI.currentUser.discordObject.premiumType;
-                    this.saveAndUpdate()
-                    DiscordAPI.currentUser.discordObject.premiumType = 2
+                    this.saveAndUpdate();
+                    DiscordAPI.currentUser.discordObject.premiumType = 2;
                 }
 
                 onStop() {
                     DiscordAPI.currentUser.discordObject.premiumType = this.originalNitroStatus;
                     Patcher.unpatchAll();
+                    PluginUtilities.removeStyle(`${config.info.name}--grayscale`);
                 }
             };
         };
