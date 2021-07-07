@@ -2,8 +2,9 @@
 * @name Freemoji
 * @displayName Freemoji
 * @description Send emoji without Nitro.
-* @author Qb
+* @author Qb, An0
 * @authorId 133659541198864384
+* @license LGPLv3 - https://www.gnu.org/licenses/lgpl-3.0.txt
 * @version 1.2.0
 * @invite gj7JFa6mF8
 * @source https://github.com/QbDesu/BetterDiscordAddons/blob/potato/Plugins/Freemoji
@@ -42,6 +43,10 @@ module.exports = (() => {
                     name: "Qb",
                     discord_id: "133659541198864384",
                     github_username: "QbDesu"
+                },
+                {
+                    name: "An0",
+                    github_username: "An00nymushun"
                 }
             ],
             version: "1.2.0",
