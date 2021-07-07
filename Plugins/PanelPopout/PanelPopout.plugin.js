@@ -4,7 +4,7 @@
 * @description Lets you view your own popout when clicking on your avatar in the bottom-left panel.
 * @author Qb
 * @authorId 133659541198864384
-* @version 1.0.0
+* @version 1.1.0
 * @invite gj7JFa6mF8
 * @source https://github.com/QbDesu/BetterDiscordAddons/blob/potato/Plugins/PanelPopout
 * @updateUrl https://raw.githubusercontent.com/QbDesu/BetterDiscordAddons/potato/Plugins/PanelPopout/PanelPopout.plugin.js
@@ -37,12 +37,12 @@ module.exports = (() => {
     const config = {
         info: {
             name: "PanelPopout",
-            version: "1.0.0",
+            version: "1.1.0",
             github_raw: "https://raw.githubusercontent.com/QbDesu/BetterDiscordAddons/potato/Plugins/PanelPopout/PanelPopout.plugin.js"
         },
-        // changelog: [
-        //   { title: "", type: "fixed", items: [  "." ] },
-        // ],
+        changelog: [
+            { title: "Features", type: "added", items: ["Added Popout Position config option"] },
+        ],
         defaultConfig: [
             {
                 type: "switch",
@@ -50,6 +50,23 @@ module.exports = (() => {
                 name: "Right-click Popout",
                 note: "Opens the popout on right-click instead of left-click",
                 value: false,
+            },
+            {
+                type: "dropdown",
+                id: "position",
+                name: "Popout Position",
+                note: "The direction where the popout will be placed",
+                value: 'top',
+                options: [
+                    {
+                        label: 'Top',
+                        value: 'top'
+                    },
+                    {
+                        label: 'Right',
+                        value: 'right'
+                    }
+                ]
             }
         ]
     };
@@ -204,10 +221,10 @@ module.exports = (() => {
                 if (this.detectedPopout) return;
 
                 try{
-                    const container = document.querySelector(containerSelector);
+                    const container = this.settings.position==='top' ? document.querySelector(containerSelector) : this.avatar;
                     if (container && this.currentUser) {
                         Popouts.showUserPopout(container, this.currentUser, {
-                            position: "top",
+                            position: this.settings.position,
                         });
                     }
                 } catch (e) {
