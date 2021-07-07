@@ -1,8 +1,12 @@
 /**
 * @name Freemoji
 * @displayName Freemoji
+* @description Send emoji without Nitro.
+* @author Qb
 * @authorId 133659541198864384
+* @version 1.2.0
 * @invite gj7JFa6mF8
+* @source https://github.com/QbDesu/BetterDiscordAddons/blob/potato/Plugins/Freemoji
 * @updateUrl https://raw.githubusercontent.com/QbDesu/BetterDiscordAddons/potato/Plugins/Freemoji/Freemoji.plugin.js
 */
 /*@cc_on
@@ -38,108 +42,132 @@ module.exports = (() => {
                     name: "Qb",
                     discord_id: "133659541198864384",
                     github_username: "QbDesu"
-                },
-                {
-                    name: "lemons",
-                    discord_id: "407348579376693260",
-                    github_username: "respecting"
                 }
             ],
-            version: "1.1.0",
+            version: "1.2.0",
             description: "Send emoji without Nitro.",
             github: "https://github.com/QbDesu/BetterDiscordAddons/blob/potato/Plugins/Freemoji",
             github_raw: "https://raw.githubusercontent.com/QbDesu/BetterDiscordAddons/potato/Plugins/Freemoji/Freemoji.plugin.js"
-        }
+        },
+        defaultConfig: [
+            {
+                type: "switch",
+                id: "removeGrayscale",
+                name: "Remove Grayscale Filter",
+                note: "Remove the grayscale filter on emoji that would normally not be usable.",
+                value: true,
+            },
+            {
+                type: "slider",
+                id: "size",
+                name: "Emoji Size",
+                note: "The size of the emoji in pixels. 40 is recommended.",
+                value: 40,
+                markers:[16,20,32,40,64],
+                stickToMarkers:true
+            }
+        ]
     };
-
     return !global.ZeresPluginLibrary ? class {
         constructor() { this._config = config; }
-        getName() { return config.info.name; }
-        getAuthor() { return config.info.authors.map(a => a.name).join(", "); }
-        getDescription() { return config.info.description; }
-        getVersion() { return config.info.version; }
         load() {
-            BdApi.showConfirmationModal("Library plugin is needed",
-                [`The library plugin needed for ${config.info.name} is missing. Please click Download Now to install it.`], {
+            BdApi.showConfirmationModal("Library plugin is needed", 
+            [`The library plugin needed for ${config.info.name} is missing. Please click Download Now to install it.`], {
                 confirmText: "Download",
                 cancelText: "Cancel",
                 onConfirm: () => {
                     require("request").get("https://rauenzi.github.io/BDPluginLibrary/release/0PluginLibrary.plugin.js", async (error, response, body) => {
-                        if (error) return require("electron").shell.openExternal("https://betterdiscord.net/ghdl?url=https://raw.githubusercontent.com/rauenzi/BDPluginLibrary/master/release/0PluginLibrary.plugin.js");
-                        await new Promise(r => require("fs").writeFile(require("path").join(BdApi.Plugins.folder, "0PluginLibrary.plugin.js"), body, r));
-                    });
-                }
-            });
-        }
-        start() { }
-        stop() { }
-    } : (([Plugin, Api]) => {
+                    if (error) return require("electron").shell.openExternal("https://betterdiscord.app/Download?id=9");
+                    await new Promise(r => require("fs").writeFile(require("path").join(BdApi.Plugins.folder, "0PluginLibrary.plugin.js"), body, r));
+                });
+            }
+        });
+    }
+    start() { }
+    stop() { }
+}
+: (([Plugin, Api]) => {
         const plugin = (Plugin, Api) => {
             const {
                 Patcher,
-                DiscordModules,
-                DiscordAPI,
-                Settings,
-                PluginUtilities
+                PluginUtilities,
+                WebpackModules
             } = Api;
+
+            const Emojis = WebpackModules.findByUniqueProperties(['getDisambiguatedEmojiContext','search']);
+            const EmojiParser = WebpackModules.findByUniqueProperties(['parse', 'parsePreprocessor', 'unparse']);
+            const EmojiPicker = WebpackModules.findByUniqueProperties(['useEmojiSelectHandler']);
+            const disabledEmojiSelector = `.${WebpackModules.getByProps('emojiItemDisabled')?.emojiItemDisabled}`;
+
             return class Freemoji extends Plugin {
-                defaultSettings = {
-                    "emojiSize": "40",
-                    "emojiRemoveGrayscale": true,
-                };
-                settings = PluginUtilities.loadSettings(this.getName(), this.defaultSettings);
                 originalNitroStatus = 0;
                 css = `
-                .emojiItemDisabled-1FvFuF {
+                ${disabledEmojiSelector} {
                     filter: grayscale(0%);
                 }
                 `;
-
-                getSettingsPanel() {
-                    return Settings.SettingPanel.build(_ => this.saveAndUpdate(), ...[
-                        new Settings.SettingGroup("Emojis").append(
-                            new Settings.Slider("Size", "The size of the emoji in pixels. 40 is recommended.", 16, 64, this.settings.emojiSize, size=>this.settings.emojiSize = size, {markers:[16,20,32,40,64], stickToMarkers:true}),
-                            new Settings.Switch("Remove Grayscale Filter", "Remove the grayscale filter on emoji that would normally not be usable.", this.settings.emojiRemoveGrayscale, value => this.settings.emojiRemoveGrayscale = value),
-                        )
-                    ])
-                }
                 
-                saveAndUpdate() {
-                    PluginUtilities.saveSettings(this.getName(), this.settings)
-
-                    //fix emotes with bad method
-                    Patcher.before(DiscordModules.MessageActions, "sendMessage", (_, [, msg]) => {
-                        msg.validNonShortcutEmojis.forEach(emoji => {
-                            if (emoji.url.startsWith("/assets/")) return;
-                            msg.content = msg.content.replace(`<${emoji.animated ? "a" : ""}${emoji.allNamesString.replace(/~\d/g, "")}${emoji.id}>`, emoji.url + `&size=${this.settings.emojiSize} `)
-                        })
-                    });
-                    //for editing message also
-                    Patcher.before(DiscordModules.MessageActions, "editMessage", (_,obj) => {
-                        let msg = obj[2].content;
-                        if (msg.search(/\d{18}/g) == -1) return;
-                        msg.match(/<a:.+?:\d{18}>|<:.+?:\d{18}>/g).forEach(idfkAnymore=>{
-                            obj[2].content = obj[2].content.replace(idfkAnymore, `https://cdn.discordapp.com/emojis/${idfkAnymore.match(/\d{18}/g)[0]}?size=${this.settings.emojiSize}`);
-                        });
+                initialize() {
+                    // make emote pretend locked emoji are unlocked
+                    Patcher.after(Emojis, 'search', (_, args, ret) => {
+                        ret.unlocked = ret.unlocked.concat(ret.locked);
+                        ret.locked.length = [];
+                        return ret;
                     });
 
-                    if (this.settings.emojiRemoveGrayscale && !document.getElementById(`${config.info.name}--grayscale`)){
+                    // replace emoji with links in messages
+                    Patcher.after(EmojiParser, 'parse', (_, args, ret) => {
+                        for(let emoji of ret.invalidEmojis) {
+                            const emojiString = `<${emoji.animated ? "a" : ""}:${emoji.originalName || emoji.name}:${emoji.id}>`;
+                            const emojiURL = `${emoji.url}&size=${this.settings.size}`;
+                            ret.content = ret.content.replace(emojiString, emojiURL);
+                        }
+                        return ret;
+                    });
+
+                    // override emoji picker to allow selecting emotes
+                    Patcher.after(EmojiPicker, 'useEmojiSelectHandler', (_, args, ret) => {
+                        const { onSelectEmoji, closePopout } = args[0];
+                        return function(data, state){
+                            ret.apply(this, args)
+                            if(data.emoji?.available) {
+                                onSelectEmoji(data.emoji, state.isFinalSelection);
+                                if(state.isFinalSelection) closePopout();
+                            }
+                        }
+                    });
+
+                    if (this.settings.removeGrayscale && !document.getElementById(`${config.info.name}--grayscale`)){
                         PluginUtilities.addStyle(`${config.info.name}--grayscale`, this.css);
                     } else {
                         PluginUtilities.removeStyle(`${config.info.name}--grayscale`);
                     }
                 }
 
-                onStart() {
-                    this.originalNitroStatus = DiscordAPI.currentUser.discordObject.premiumType;
-                    this.saveAndUpdate();
-                    DiscordAPI.currentUser.discordObject.premiumType = 2;
-                }
-
-                onStop() {
-                    DiscordAPI.currentUser.discordObject.premiumType = this.originalNitroStatus;
+                cleanup() {
                     Patcher.unpatchAll();
                     PluginUtilities.removeStyle(`${config.info.name}--grayscale`);
+                }
+
+                onStart() {
+                    if (!Emojis || !EmojiParser || !EmojiPicker) {
+                        this.initialize = ()=>{};
+                        return Toasts.error(`Couldn't start ${config.info.name}: Couldn't find Discord Modules`);
+                    }
+                    this.initialize();
+                }
+                
+                onStop() {
+                    this.cleanup();
+                }
+            
+                getSettingsPanel() {
+                    const panel = this.buildSettingsPanel();
+                    panel.addListener(() => {
+                        this.cleanup();
+                        this.initialize();
+                    });
+                    return panel.getElement();
                 }
             };
         };
