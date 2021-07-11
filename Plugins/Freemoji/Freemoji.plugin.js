@@ -1,7 +1,7 @@
 /**
 * @name Freemoji
 * @displayName Freemoji
-* @description Send emoji without Nitro.
+* @description Send emoji external emoji and animated emoji without Nitro.
 * @author Qb, An0
 * @authorId 133659541198864384
 * @license LGPLv3 - https://www.gnu.org/licenses/lgpl-3.0.txt
@@ -50,17 +50,52 @@ module.exports = (() => {
                 }
             ],
             version: "1.2.0",
-            description: "Send emoji without Nitro.",
+            description: "Send emoji external emoji and animated emoji without Nitro.",
             github: "https://github.com/QbDesu/BetterDiscordAddons/blob/potato/Plugins/Freemoji",
             github_raw: "https://raw.githubusercontent.com/QbDesu/BetterDiscordAddons/potato/Plugins/Freemoji/Freemoji.plugin.js"
         },
         defaultConfig: [
             {
-                type: "switch",
+                type: "dropdown",
                 id: "removeGrayscale",
                 name: "Remove Grayscale Filter",
                 note: "Remove the grayscale filter on emoji that would normally not be usable.",
-                value: true,
+                value: 'embedPerms',
+                options: [
+                    {
+                        label: 'Always',
+                        value: 'always'
+                    },
+                    {
+                        label: 'With Embed Perms',
+                        value: 'embedPerms'
+                    },
+                    {
+                        label: 'Never',
+                        value: 'never'
+                    }
+                ]
+            },
+            {
+                type: "dropdown",
+                id: "missingEmbedPerms",
+                name: "Missing Embed Perms Behaviour",
+                note: "What should happen if the user selects an emote even though they have no embed permissions.",
+                value: 'showDialog',
+                options: [
+                    {
+                        label: 'Show Confirmation Dialog',
+                        value: 'showDialog'
+                    },
+                    {
+                        label: 'Insert Anyway',
+                        value: 'insert'
+                    },
+                    {
+                        label: 'Nothing',
+                        value: 'nothing'
+                    }
+                ]
             },
             {
                 type: "slider",
@@ -77,42 +112,58 @@ module.exports = (() => {
         constructor() { this._config = config; }
         load() {
             BdApi.showConfirmationModal("Library plugin is needed", 
-            [`The library plugin needed for ${config.info.name} is missing. Please click Download Now to install it.`], {
+                [`The library plugin needed for ${config.info.name} is missing. Please click Download Now to install it.`], {
                 confirmText: "Download",
                 cancelText: "Cancel",
                 onConfirm: () => {
                     require("request").get("https://rauenzi.github.io/BDPluginLibrary/release/0PluginLibrary.plugin.js", async (error, response, body) => {
-                    if (error) return require("electron").shell.openExternal("https://betterdiscord.app/Download?id=9");
-                    await new Promise(r => require("fs").writeFile(require("path").join(BdApi.Plugins.folder, "0PluginLibrary.plugin.js"), body, r));
-                });
-            }
-        });
+                        if (error) return require("electron").shell.openExternal("https://betterdiscord.app/Download?id=9");
+                        await new Promise(r => require("fs").writeFile(require("path").join(BdApi.Plugins.folder, "0PluginLibrary.plugin.js"), body, r));
+                    });
+                }
+            });
+        }
+        start() { }
+        stop() { }
     }
-    start() { }
-    stop() { }
-}
-: (([Plugin, Api]) => {
+    : (([Plugin, Api]) => {
         const plugin = (Plugin, Api) => {
             const {
                 Patcher,
                 PluginUtilities,
-                WebpackModules
+                WebpackModules,
+                Toasts,
+                Logger,
+                Utilities,
+                DiscordModules: {
+                    Permissions,
+                    DiscordPermissions,
+                    UserStore,
+                    SelectedChannelStore,
+                    ChannelStore
+                }
             } = Api;
 
             const Emojis = WebpackModules.findByUniqueProperties(['getDisambiguatedEmojiContext','search']);
             const EmojiParser = WebpackModules.findByUniqueProperties(['parse', 'parsePreprocessor', 'unparse']);
             const EmojiPicker = WebpackModules.findByUniqueProperties(['useEmojiSelectHandler']);
             const disabledEmojiSelector = `.${WebpackModules.getByProps('emojiItemDisabled')?.emojiItemDisabled}`;
+            const ExpressionPicker = WebpackModules.getModule(e => e.type?.displayName === "ExpressionPicker");
 
+            const removeGrayscaleClass = `${config.info.name}--remove-grayscale`;
             return class Freemoji extends Plugin {
-                originalNitroStatus = 0;
-                css = `
-                ${disabledEmojiSelector} {
+                removeGrayscaleCss = `
+                .${removeGrayscaleClass} ${disabledEmojiSelector} {
                     filter: grayscale(0%);
                 }
                 `;
-                
-                initialize() {
+                currentUser = null;
+
+                addStyles() {
+                    PluginUtilities.addStyle(removeGrayscaleClass, this.removeGrayscaleCss);
+                }
+
+                patch() {
                     // make emote pretend locked emoji are unlocked
                     Patcher.after(Emojis, 'search', (_, args, ret) => {
                         ret.unlocked = ret.unlocked.concat(ret.locked);
@@ -133,33 +184,66 @@ module.exports = (() => {
                     // override emoji picker to allow selecting emotes
                     Patcher.after(EmojiPicker, 'useEmojiSelectHandler', (_, args, ret) => {
                         const { onSelectEmoji, closePopout } = args[0];
-                        return function(data, state){
-                            ret.apply(this, args)
+                        return (data, state) => {
+                            ret.apply(this, args);
                             if(data.emoji?.available) {
+                                if (data.isDisabled) {
+                                    const perms = this.hasEmbedPerms();
+                                    if (!perms && this.settings.missingEmbedPerms == 'nothing') return; 
+                                    if (!perms && this.settings.missingEmbedPerms == 'showDialog') {
+                                        BdApi.showConfirmationModal(
+                                            "Missing Image Embed Permissions", 
+                                            [`It looks like you are trying to send an Emoji using Freemoji but you dont have the permissions to send embeded images in this channel. You can choose to send it anyway but it will only show as a link.`], {
+                                            confirmText: "Send Anyway",
+                                            cancelText: "Cancel",
+                                            onConfirm: () => {
+                                                onSelectEmoji(data.emoji, state.isFinalSelection);
+                                                if(state.isFinalSelection) closePopout();
+                                            }
+                                        });
+                                        return;
+                                    }
+                                }
                                 onSelectEmoji(data.emoji, state.isFinalSelection);
                                 if(state.isFinalSelection) closePopout();
                             }
+                            
                         }
                     });
 
-                    if (this.settings.removeGrayscale && !document.getElementById(`${config.info.name}--grayscale`)){
-                        PluginUtilities.addStyle(`${config.info.name}--grayscale`, this.css);
-                    } else {
-                        PluginUtilities.removeStyle(`${config.info.name}--grayscale`);
-                    }
+                    // add remove grayscale class to expression picker
+                    Patcher.after(ExpressionPicker, 'type', (_, args, ret) => {
+                        if (this.settings.removeGrayscale=='never') return;
+                        if (this.settings.removeGrayscale!='always' && !this.hasEmbedPerms()) return;
+                        Utilities.getNestedProp(ret, "props.children.props").className += ` ${removeGrayscaleClass}`
+                    });
+                }
+
+                hasEmbedPerms() {
+                    if (!this.currentUser) this.currentUser = UserStore.getCurrentUser();
+                    const channel = ChannelStore.getChannel(SelectedChannelStore.getChannelId());
+                    if (!channel.guild_id) return true;
+                    return Permissions.can(DiscordPermissions.EMBED_LINKS, this.currentUser.id, channel)
                 }
 
                 cleanup() {
                     Patcher.unpatchAll();
-                    PluginUtilities.removeStyle(`${config.info.name}--grayscale`);
+                    this.removeStyles();
+                }
+
+                removeStyles() {
+                    PluginUtilities.removeStyle(removeGrayscaleClass);
                 }
 
                 onStart() {
-                    if (!Emojis || !EmojiParser || !EmojiPicker) {
-                        this.initialize = ()=>{};
-                        return Toasts.error(`Couldn't start ${config.info.name}: Couldn't find Discord Modules`);
+                    try{
+                        this.patch();
+                        this.addStyles();
+                    } catch (e) {
+                        Toasts.error(`${config.info.name}: An error occured during intialiation: ${e}`);
+                        Logger.error(`Error while patching: ${e}`);
+                        console.error(e);
                     }
-                    this.initialize();
                 }
                 
                 onStop() {
@@ -169,8 +253,8 @@ module.exports = (() => {
                 getSettingsPanel() {
                     const panel = this.buildSettingsPanel();
                     panel.addListener(() => {
-                        this.cleanup();
-                        this.initialize();
+                        this.removeStyles();
+                        this.addStyles();
                     });
                     return panel.getElement();
                 }
