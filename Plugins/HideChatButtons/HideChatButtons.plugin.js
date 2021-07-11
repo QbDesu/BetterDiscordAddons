@@ -118,20 +118,21 @@ module.exports = (() => {
             const buttonsSelector = new DOMTools.Selector(buttonClasses.buttons);
             const emojiButtonSelector = new DOMTools.Selector(buttonClasses.emojiButton);
             const stickerButtonSelector = new DOMTools.Selector(buttonClasses.stickerButton);
-
             return class Freemoji extends Plugin {
                 hideEmojiButton = `${buttonsSelector} ${emojiButtonSelector} { display: none }`;
                 hideStickerButton = `${buttonsSelector} ${stickerButtonSelector} { display: none }`;
 
                 
                 initialize() {
-                    Patcher.before(ChannelTextAreaContainer, "render", (_, [props], returnValue) => {
+                    Patcher.before(ChannelTextAreaContainer, "render", (_, [props]) => {
                         if(this.settings.giftButton) props.shouldRenderPremiumGiftButton = false;
                         if(this.settings.attachButton) props.renderAttachButton = ()=>{}
                     });
 
-                    /** ARGH!! How to nicely select the GIF button.... */
-
+                    // TODO: Detect locale changes and update hideGifButton css snippet
+                    if (this.settings.gifButton)
+                        PluginUtilities.addStyle(`${config.info.name}--hideGifButton`, `${buttonsSelector} [aria-label="${DiscordModules.Strings.GIF_BUTTON_LABEL}"] { display: none }`);
+                    
                     if (this.settings.emojiButton) 
                         PluginUtilities.addStyle(`${config.info.name}--hideEmojiButton`, this.hideEmojiButton);
                     
@@ -142,8 +143,8 @@ module.exports = (() => {
                 cleanup() {
                     Patcher.unpatchAll();
                     PluginUtilities.removeStyle(`${config.info.name}--hideEmojiButton`);
+                    PluginUtilities.removeStyle(`${config.info.name}--hideGifButton`);
                     PluginUtilities.removeStyle(`${config.info.name}--hideStickerButton`);
-                    PluginUtilities.removeStyle(`${config.info.name}--hideAttachButton`);
                 }
 
                 onStart() {
