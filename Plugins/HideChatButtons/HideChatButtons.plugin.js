@@ -4,7 +4,7 @@
 * @description Remove annoying buttons like the Gift button from the chat box.
 * @author Qb
 * @authorId 133659541198864384
-* @version 1.0.0
+* @version 1.0.1
 * @invite gj7JFa6mF8
 * @source https://github.com/QbDesu/BetterDiscordAddons/blob/potato/Plugins/HideChatButtons
 * @updateUrl https://raw.githubusercontent.com/QbDesu/BetterDiscordAddons/potato/Plugins/HideChatButtons/HideChatButtons.plugin.js
@@ -44,7 +44,7 @@ module.exports = (() => {
                     github_username: "QbDesu"
                 }
             ],
-            version: "1.0.0",
+            version: "1.0.1",
             description: "Remove annoying buttons like the Gift button from the chat box.",
             github: "https://github.com/QbDesu/BetterDiscordAddons/blob/potato/Plugins/HideChatButtons",
             github_raw: "https://raw.githubusercontent.com/QbDesu/BetterDiscordAddons/potato/Plugins/HideChatButtons/HideChatButtons.plugin.js"
@@ -109,50 +109,75 @@ module.exports = (() => {
         const plugin = (Plugin, Api) => {
             const {
                 Patcher,
-                WebpackModules
+                DOMTools,
+                WebpackModules,
+                PluginUtilities
             } = Api;
 
             // thanks to Strencher and InvisibleTyping for finding this
             const ChannelTextAreaContainer = WebpackModules.find(m => m?.type?.render?.displayName === "ChannelTextAreaContainer")?.type;
-            const buttonClasses = WebpackModules.getByProps('emojiButton','stickerButton');
+            const buttonClasses = WebpackModules.getByProps("emojiButton", "stickerButton");
             const buttonsSelector = new DOMTools.Selector(buttonClasses.buttons);
             const emojiButtonSelector = new DOMTools.Selector(buttonClasses.emojiButton);
             const stickerButtonSelector = new DOMTools.Selector(buttonClasses.stickerButton);
-            return class Freemoji extends Plugin {
-                hideEmojiButton = `${buttonsSelector} ${emojiButtonSelector} { display: none }`;
-                hideStickerButton = `${buttonsSelector} ${stickerButtonSelector} { display: none }`;
-
+            const buttonContainerSelector = new DOMTools.Selector(buttonClasses.buttonContainer);
+            const getCssKey = name => `${config.info.name}--${name}`;
+            const getCssRule = child => `${buttonsSelector} ${child} { display: none; }`;
+            
+            return class HideChatButtons extends Plugin {
+                hideGifKey = getCssKey("hideGifButton");
+                hideEmojiKey = getCssKey("hideEmojiButton");
+                hideStickerKey = getCssKey("hideStickerButton");
+                // buttonsSelector children (patching out the gift button taken into account):
+                // gift button [-1] (1 when not patched out)
+                // buttonContainer(gif), [1] (2)
+                // buttonContainer(sticker), [2] (3)
+                // buttonContainer(emoji), [3] (4)
+                hideEmojiButton = getCssRule(emojiButtonSelector);
+                hideStickerButton = getCssRule(stickerButtonSelector);
                 
-                initialize() {
+                get hideGifButton() {
+                    return getCssRule(`${buttonContainerSelector}:nth-child(${this.settings.giftButton ? "1" : "2"})`);
+                }
+                
+                addStyles() {
+                    if (this.settings.gifButton) {
+                        PluginUtilities.addStyle(this.hideGifKey, this.hideGifButton);
+                    }
+                    
+                    if (this.settings.emojiButton) {
+                        PluginUtilities.addStyle(this.hideEmojiKey, this.hideEmojiButton);
+                    }
+                    
+                    if (this.settings.stickerButton) {
+                        PluginUtilities.addStyle(this.hideStickerKey, this.hideStickerButton);
+                    }
+                }
+                
+                patch() {
                     Patcher.before(ChannelTextAreaContainer, "render", (_, [props]) => {
-                        if(this.settings.giftButton) props.shouldRenderPremiumGiftButton = false;
-                        if(this.settings.attachButton) props.renderAttachButton = ()=>{}
+                        if (this.settings.giftButton) props.shouldRenderPremiumGiftButton = false;
+                        if (this.settings.attachButton) props.renderAttachButton = () => {};
                     });
-
-                    // TODO: Detect locale changes and update hideGifButton css snippet
-                    if (this.settings.gifButton)
-                        PluginUtilities.addStyle(`${config.info.name}--hideGifButton`, `${buttonsSelector} [aria-label="${DiscordModules.Strings.GIF_BUTTON_LABEL}"] { display: none }`);
-                    
-                    if (this.settings.emojiButton) 
-                        PluginUtilities.addStyle(`${config.info.name}--hideEmojiButton`, this.hideEmojiButton);
-                    
-                    if (this.settings.stickerButton) 
-                        PluginUtilities.addStyle(`${config.info.name}--hideStickerButton`, this.hideStickerButton);
                 }
 
                 cleanup() {
                     Patcher.unpatchAll();
-                    PluginUtilities.removeStyle(`${config.info.name}--hideEmojiButton`);
-                    PluginUtilities.removeStyle(`${config.info.name}--hideGifButton`);
-                    PluginUtilities.removeStyle(`${config.info.name}--hideStickerButton`);
+                    this.removeStyles();
+                }
+                
+                removeStyles() {
+                    PluginUtilities.removeStyle(this.hideGifKey);
+                    PluginUtilities.removeStyle(this.hideEmojiKey);
+                    PluginUtilities.removeStyle(this.hideStickerKey);
                 }
 
                 onStart() {
                     if (!ChannelTextAreaContainer) {
-                        this.initialize = ()=>{};
                         return Toasts.error(`Couldn't start ${config.info.name}: Couldn't find ChannelTextAreaContainer`);
                     }
-                    this.initialize();
+                    this.addStyles();
+                    this.patch();
                 }
                 
                 onStop() {
@@ -162,8 +187,8 @@ module.exports = (() => {
                 getSettingsPanel() {
                     const panel = this.buildSettingsPanel();
                     panel.addListener(() => {
-                        this.cleanup();
-                        this.initialize();
+                        this.removeStyles();
+                        this.addStyles();
                     });
                     return panel.getElement();
                 }
