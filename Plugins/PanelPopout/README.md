@@ -2,7 +2,7 @@
 
 This plugin allows clicking your avatar in the bottom-left panel to open your user popout.
 
-![Screenshot](./_meta/preview.gif)
+![Screenshot](https://raw.githubusercontent.com/QbDesu/BetterDiscordAddons/potato/Plugins/PanelPopout/_meta/preview.gif)
 
 It's configurable whether the popout should appear when right-clicking or left-clicking.
 
