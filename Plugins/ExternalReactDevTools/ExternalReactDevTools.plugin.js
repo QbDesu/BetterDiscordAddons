@@ -4,7 +4,7 @@
 * @description Injects the script required by the External React DevTools
 * @author Qb
 * @authorId 133659541198864384
-* @version 1.0.0
+* @version 1.0.1
 * @invite gj7JFa6mF8
 * @source https://github.com/QbDesu/BetterDiscordAddons/blob/potato/Plugins/ExternalReactDevTools
 * @updateUrl https://raw.githubusercontent.com/QbDesu/BetterDiscordAddons/potato/Plugins/ExternalReactDevTools/ExternalReactDevTools.plugin.js
@@ -37,8 +37,8 @@ module.exports = (() => {
     const config = {
         info: {
             name: "ExternalReactDevTools",
-            description: "Injects the script required by the External React DevTools (Requires Reload)",
-            version: "1.0.0",
+            description: "Injects the script required by the External React DevTools.",
+            version: "1.0.1",
             github_raw: "https://raw.githubusercontent.com/QbDesu/BetterDiscordAddons/potato/Plugins/ExternalReactDevTools/ExternalReactDevTools.plugin.js"
         }
     };
@@ -68,9 +68,19 @@ module.exports = (() => {
             getAuthor = null;
             
             onStart() {
-                if ('ReactDevToolsBackend' in window) return;
+                if ('ReactDevToolsBackend' in window) return console.warn('ReactDevTools was already found!');
+                const amdDefine = window.define;
+                if (amdDefine) {
+                    window.define = undefined;
+                }
                 const script = document.createElement('script');
-                script.setAttribute('src','http://localhost:8097');
+                script.setAttribute('id', config.info.name);
+                script.setAttribute('src', 'http://localhost:8097');
+                script.addEventListener('load', () => {
+                    if (amdDefine) {
+                        window.define = amdDefine;
+                    }
+                });
                 document.head.appendChild(script);
             }
             
