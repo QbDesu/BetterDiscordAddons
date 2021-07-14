@@ -5,7 +5,7 @@
 * @author Qb, An0
 * @authorId 133659541198864384
 * @license LGPLv3 - https://www.gnu.org/licenses/lgpl-3.0.txt
-* @version 1.2.0
+* @version 1.3.0
 * @invite gj7JFa6mF8
 * @source https://github.com/QbDesu/BetterDiscordAddons/blob/potato/Plugins/Freemoji
 * @updateUrl https://raw.githubusercontent.com/QbDesu/BetterDiscordAddons/potato/Plugins/Freemoji/Freemoji.plugin.js
@@ -49,11 +49,14 @@ module.exports = (() => {
                     github_username: "An00nymushun"
                 }
             ],
-            version: "1.2.0",
+            version: "1.3.0",
             description: "Send emoji external emoji and animated emoji without Nitro.",
             github: "https://github.com/QbDesu/BetterDiscordAddons/blob/potato/Plugins/Freemoji",
             github_raw: "https://raw.githubusercontent.com/QbDesu/BetterDiscordAddons/potato/Plugins/Freemoji/Freemoji.plugin.js"
         },
+        changelog: [
+            { title: "Features", type: "added", items: ["Added the ability to send emoji that would normally even be unavailable to Nitro users. This does however not enable you to send emoji from other servers if the server has external emoji disabled."] },
+        ],
         defaultConfig: [
             {
                 type: "dropdown",
@@ -105,6 +108,13 @@ module.exports = (() => {
                 value: 40,
                 markers:[16,20,32,40,64],
                 stickToMarkers:true
+            },
+            {
+                type: "switch",
+                id: "allowUnavailable",
+                name: "Allow Unavailable Emoji",
+                note: "Allow using emoji that would normally even be unavailable to Nitro users. For example emoji which became unavailable because a server lost it's boost tier.",
+                value: true
             }
         ]
     };
@@ -135,6 +145,7 @@ module.exports = (() => {
                 Toasts,
                 Logger,
                 Utilities,
+                DOMTools,
                 DiscordModules: {
                     Permissions,
                     DiscordPermissions,
@@ -147,9 +158,9 @@ module.exports = (() => {
             const Emojis = WebpackModules.findByUniqueProperties(['getDisambiguatedEmojiContext','search']);
             const EmojiParser = WebpackModules.findByUniqueProperties(['parse', 'parsePreprocessor', 'unparse']);
             const EmojiPicker = WebpackModules.findByUniqueProperties(['useEmojiSelectHandler']);
-            const disabledEmojiSelector = `.${WebpackModules.getByProps('emojiItemDisabled')?.emojiItemDisabled}`;
             const ExpressionPicker = WebpackModules.getModule(e => e.type?.displayName === "ExpressionPicker");
 
+            const disabledEmojiSelector = new DOMTools.Selector(WebpackModules.getByProps('emojiItemDisabled')?.emojiItemDisabled);
             const removeGrayscaleClass = `${config.info.name}--remove-grayscale`;
             return class Freemoji extends Plugin {
                 removeGrayscaleCss = `
@@ -163,6 +174,12 @@ module.exports = (() => {
                     PluginUtilities.addStyle(removeGrayscaleClass, this.removeGrayscaleCss);
                 }
 
+                replaceEmoji(text, emoji) {
+                    const emojiString = `<${emoji.animated ? "a" : ""}:${emoji.originalName || emoji.name}:${emoji.id}>`;
+                    const emojiURL = `${emoji.url}&size=${this.settings.size}`;
+                    return text.replace(emojiString, emojiURL);
+                }
+
                 patch() {
                     // make emote pretend locked emoji are unlocked
                     Patcher.after(Emojis, 'search', (_, args, ret) => {
@@ -173,10 +190,15 @@ module.exports = (() => {
 
                     // replace emoji with links in messages
                     Patcher.after(EmojiParser, 'parse', (_, args, ret) => {
-                        for(let emoji of ret.invalidEmojis) {
-                            const emojiString = `<${emoji.animated ? "a" : ""}:${emoji.originalName || emoji.name}:${emoji.id}>`;
-                            const emojiURL = `${emoji.url}&size=${this.settings.size}`;
-                            ret.content = ret.content.replace(emojiString, emojiURL);
+                        for(const emoji of ret.invalidEmojis) {
+                            ret.content = this.replaceEmoji(ret.content, emoji);
+                        }
+                        if (this.settings.allowUnavailable) {
+                            for(const emoji of ret.validNonShortcutEmojis) {
+                                if (!emoji.available) {
+                                    ret.content = this.replaceEmoji(ret.content, emoji);
+                                }
+                            }
                         }
                         return ret;
                     });
@@ -186,7 +208,7 @@ module.exports = (() => {
                         const { onSelectEmoji, closePopout } = args[0];
                         return (data, state) => {
                             ret.apply(this, args);
-                            if(data.emoji?.available) {
+                            if(this.settings.allowUnavailable || data.emoji?.available) {
                                 if (data.isDisabled) {
                                     const perms = this.hasEmbedPerms();
                                     if (!perms && this.settings.missingEmbedPerms == 'nothing') return; 
