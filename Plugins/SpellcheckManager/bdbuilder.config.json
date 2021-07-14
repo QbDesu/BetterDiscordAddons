@@ -1,0 +1,16 @@
+{
+    "build": {
+        "watch": false,
+        "folder": "./src",
+        "filename": "[name].plugin.js",
+        "readme": false,
+        "production": true,
+        "entry": ".",
+        "output": "./",
+        "install": false
+    },
+    "paths": {
+        "bdfolder": "",
+        "release_folder": "."
+    }
+}

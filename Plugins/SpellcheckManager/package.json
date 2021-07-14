@@ -1,0 +1,38 @@
+{
+    "main": "./src/index.tsx",
+    "scripts": {
+        "build": "bdbuilder --plugin SpellcheckManager --build --config ./bdbuilder.config.json",
+        "watch": "bdbuilder --plugin SpellcheckManager --watch --config ./bdbuilder.config.json"
+    },
+    "author": "Qb",
+    "license": "Unlicense",
+    "devDependencies": {
+        "@betterdiscordbuilder/bdbuilder": "^1.2.6-preview.4"
+    },
+    "info": {
+        "name": "SpellcheckManager",
+        "version": "1.0.0",
+        "authors": [
+            {
+                "name": "Qb",
+                "discord_id": "133659541198864384",
+                "github_username": "QbDesu"
+            }
+        ],
+        "description": "A simple plugin that allows you to remove words from the spellchecker's dictionary.",
+        "github": "https://github.com/QbDesu/BetterDiscordAddons/tree/potato/Plugins/SpellcheckManager",
+        "github_raw": "https://raw.githubusercontent.com/QbDesu/BetterDiscordAddons/potato/Plugins/SpellcheckManager/SpellcheckManager.plugin.js"
+    },
+    "build": {
+        "zlibrary": true,
+        "copy": true,
+        "production": false,
+        "scssHash": false,
+        "alias": {},
+        "release": {
+            "public": true,
+            "source": false,
+            "readme": false
+        }
+    }
+}
