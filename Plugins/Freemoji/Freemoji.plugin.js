@@ -5,7 +5,7 @@
 * @author Qb, An0
 * @authorId 133659541198864384
 * @license LGPLv3 - https://www.gnu.org/licenses/lgpl-3.0.txt
-* @version 1.3.0
+* @version 1.3.1
 * @invite gj7JFa6mF8
 * @source https://github.com/QbDesu/BetterDiscordAddons/blob/potato/Plugins/Freemoji
 * @updateUrl https://raw.githubusercontent.com/QbDesu/BetterDiscordAddons/potato/Plugins/Freemoji/Freemoji.plugin.js
@@ -49,13 +49,13 @@ module.exports = (() => {
                     github_username: "An00nymushun"
                 }
             ],
-            version: "1.3.0",
+            version: "1.3.1",
             description: "Send emoji external emoji and animated emoji without Nitro.",
             github: "https://github.com/QbDesu/BetterDiscordAddons/blob/potato/Plugins/Freemoji",
             github_raw: "https://raw.githubusercontent.com/QbDesu/BetterDiscordAddons/potato/Plugins/Freemoji/Freemoji.plugin.js"
         },
         changelog: [
-            { title: "Features", type: "added", items: ["Added the ability to send emoji that would normally even be unavailable to Nitro users. This does however not enable you to send emoji from other servers if the server has external emoji disabled."] },
+            { title: "Bug Fixes", type: "fixed", items: ["Fixed favoriting emoji not sfs"] }
         ],
         defaultConfig: [
             {
@@ -206,13 +206,16 @@ module.exports = (() => {
                     // override emoji picker to allow selecting emotes
                     Patcher.after(EmojiPicker, 'useEmojiSelectHandler', (_, args, ret) => {
                         const { onSelectEmoji, closePopout } = args[0];
-                        return (data, state) => {
-                            ret.apply(this, args);
-                            if(this.settings.allowUnavailable || data.emoji?.available) {
+                        const self = this;
+
+                        return function (data, state) {
+                            if (state.toggleFavorite) return ret.apply(this, arguments);
+
+                            if (self.settings.allowUnavailable || data.emoji?.available) {
                                 if (data.isDisabled) {
-                                    const perms = this.hasEmbedPerms();
-                                    if (!perms && this.settings.missingEmbedPerms == 'nothing') return; 
-                                    if (!perms && this.settings.missingEmbedPerms == 'showDialog') {
+                                    const perms = self.hasEmbedPerms();
+                                    if (!perms && self.settings.missingEmbedPerms == 'nothing') return; 
+                                    if (!perms && self.settings.missingEmbedPerms == 'showDialog') {
                                         BdApi.showConfirmationModal(
                                             "Missing Image Embed Permissions", 
                                             [`It looks like you are trying to send an Emoji using Freemoji but you dont have the permissions to send embeded images in this channel. You can choose to send it anyway but it will only show as a link.`], {
