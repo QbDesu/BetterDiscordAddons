@@ -5,7 +5,7 @@
 * @author Qb, An0
 * @authorId 133659541198864384
 * @license LGPLv3 - https://www.gnu.org/licenses/lgpl-3.0.txt
-* @version 1.3.1
+* @version 1.4.0
 * @invite gj7JFa6mF8
 * @source https://github.com/QbDesu/BetterDiscordAddons/blob/potato/Plugins/Freemoji
 * @updateUrl https://raw.githubusercontent.com/QbDesu/BetterDiscordAddons/potato/Plugins/Freemoji/Freemoji.plugin.js
@@ -49,13 +49,13 @@ module.exports = (() => {
                     github_username: "An00nymushun"
                 }
             ],
-            version: "1.3.1",
+            version: "1.4.0",
             description: "Send emoji external emoji and animated emoji without Nitro.",
             github: "https://github.com/QbDesu/BetterDiscordAddons/blob/potato/Plugins/Freemoji",
             github_raw: "https://raw.githubusercontent.com/QbDesu/BetterDiscordAddons/potato/Plugins/Freemoji/Freemoji.plugin.js"
         },
         changelog: [
-            { title: "Bug Fixes", type: "fixed", items: ["Fixed favoriting emoji not sfs"] }
+            { title: "Features", type: "feature", items: ["Added an option to send emoji links directly."] }
         ],
         defaultConfig: [
             {
@@ -115,6 +115,13 @@ module.exports = (() => {
                 name: "Allow Unavailable Emoji",
                 note: "Allow using emoji that would normally even be unavailable to Nitro users. For example emoji which became unavailable because a server lost it's boost tier.",
                 value: true
+            },
+            {
+                type: "switch",
+                id: "sendDirectly",
+                name: "Send Directly",
+                note: "Send the emoji link in a message directly instead of putting it in the chat box.",
+                value: false
             }
         ]
     };
@@ -159,9 +166,11 @@ module.exports = (() => {
             const EmojiParser = WebpackModules.findByUniqueProperties(['parse', 'parsePreprocessor', 'unparse']);
             const EmojiPicker = WebpackModules.findByUniqueProperties(['useEmojiSelectHandler']);
             const ExpressionPicker = WebpackModules.getModule(e => e.type?.displayName === "ExpressionPicker");
+            const MessageUtilities = WebpackModules.getByProps("sendMessage");
 
             const disabledEmojiSelector = new DOMTools.Selector(WebpackModules.getByProps('emojiItemDisabled')?.emojiItemDisabled);
             const removeGrayscaleClass = `${config.info.name}--remove-grayscale`;
+
             return class Freemoji extends Plugin {
                 removeGrayscaleCss = `
                 .${removeGrayscaleClass} ${disabledEmojiSelector} {
@@ -222,15 +231,13 @@ module.exports = (() => {
                                             confirmText: "Send Anyway",
                                             cancelText: "Cancel",
                                             onConfirm: () => {
-                                                onSelectEmoji(data.emoji, state.isFinalSelection);
-                                                if(state.isFinalSelection) closePopout();
+                                                self.selectEmoji({emoji: data.emoji, isFinalSelection: state.isFinalSelection, onSelectEmoji, closePopout});
                                             }
                                         });
                                         return;
                                     }
                                 }
-                                onSelectEmoji(data.emoji, state.isFinalSelection);
-                                if(state.isFinalSelection) closePopout();
+                                self.selectEmoji({emoji: data.emoji, isFinalSelection: state.isFinalSelection, onSelectEmoji, closePopout});
                             }
                             
                         }
@@ -242,6 +249,15 @@ module.exports = (() => {
                         if (this.settings.removeGrayscale!='always' && !this.hasEmbedPerms()) return;
                         Utilities.getNestedProp(ret, "props.children.props").className += ` ${removeGrayscaleClass}`
                     });
+                }
+
+                selectEmoji({emoji, isFinalSelection, onSelectEmoji, closePopout}) {
+                    if (this.settings.sendDirectly) {
+                        MessageUtilities.sendMessage(SelectedChannelStore.getChannelId(), {content: `${emoji.url}&size=${this.settings.size}`});
+                    } else {
+                        onSelectEmoji(emoji, isFinalSelection);
+                    }
+                    if(isFinalSelection) closePopout();
                 }
 
                 hasEmbedPerms() {
