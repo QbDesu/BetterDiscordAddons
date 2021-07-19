@@ -5,7 +5,7 @@
 * @author Qb, An0
 * @authorId 133659541198864384
 * @license LGPLv3 - https://www.gnu.org/licenses/lgpl-3.0.txt
-* @version 1.4.0
+* @version 1.5.0
 * @invite gj7JFa6mF8
 * @source https://github.com/QbDesu/BetterDiscordAddons/blob/potato/Plugins/Freemoji
 * @updateUrl https://raw.githubusercontent.com/QbDesu/BetterDiscordAddons/potato/Plugins/Freemoji/Freemoji.plugin.js
@@ -37,32 +37,49 @@
 module.exports = (() => {
     const config = {
         info: {
-            name: "Freemoji",
+            name: 'Freemoji',
             authors: [
                 {
-                    name: "Qb",
-                    discord_id: "133659541198864384",
-                    github_username: "QbDesu"
+                    name: 'Qb',
+                    discord_id: '133659541198864384',
+                    github_username: 'QbDesu'
                 },
                 {
-                    name: "An0",
-                    github_username: "An00nymushun"
+                    name: 'An0',
+                    github_username: 'An00nymushun'
                 }
             ],
-            version: "1.4.0",
-            description: "Send emoji external emoji and animated emoji without Nitro.",
-            github: "https://github.com/QbDesu/BetterDiscordAddons/blob/potato/Plugins/Freemoji",
-            github_raw: "https://raw.githubusercontent.com/QbDesu/BetterDiscordAddons/potato/Plugins/Freemoji/Freemoji.plugin.js"
+            version: '1.5.0',
+            description: 'Send emoji external emoji and animated emoji without Nitro.',
+            github: 'https://github.com/QbDesu/BetterDiscordAddons/blob/potato/Plugins/Freemoji',
+            github_raw: 'https://raw.githubusercontent.com/QbDesu/BetterDiscordAddons/potato/Plugins/Freemoji/Freemoji.plugin.js'
         },
         changelog: [
-            { title: "Features", type: "feature", items: ["Added an option to send emoji links directly."] }
+            { title: 'Features', type: 'feature', items: ['Added an option to allow sending external emoji on servers that normally don\'t allow sending external emoji.'] },
+            { title: 'Changes', type: 'change', items: ['Added more plugin settings and sorted them to be in a more sensible order.'] }
         ],
         defaultConfig: [
             {
-                type: "dropdown",
-                id: "removeGrayscale",
-                name: "Remove Grayscale Filter",
-                note: "Remove the grayscale filter on emoji that would normally not be usable.",
+                type: 'switch',
+                id: 'sendDirectly',
+                name: 'Send Directly',
+                note: 'Send the emoji link in a message directly instead of putting it in the chat box.',
+                value: false
+            },
+            {
+                type: 'slider',
+                id: 'size',
+                name: 'Emoji Size',
+                note: 'The size of the emoji in pixels. 40 is recommended.',
+                value: 40,
+                markers:[16,20,32,40,64],
+                stickToMarkers:true
+            },
+            {
+                type: 'dropdown',
+                id: 'removeGrayscale',
+                name: 'Remove Grayscale Filter',
+                note: 'Remove the grayscale filter on emoji that would normally not be usable.',
                 value: 'embedPerms',
                 options: [
                     {
@@ -80,10 +97,10 @@ module.exports = (() => {
                 ]
             },
             {
-                type: "dropdown",
-                id: "missingEmbedPerms",
-                name: "Missing Embed Perms Behaviour",
-                note: "What should happen if the user selects an emote even though they have no embed permissions.",
+                type: 'dropdown',
+                id: 'missingEmbedPerms',
+                name: 'Missing Embed Perms Behaviour',
+                note: 'What should happen if you select an emoji even though you have no embed permissions.',
                 value: 'showDialog',
                 options: [
                     {
@@ -101,41 +118,60 @@ module.exports = (() => {
                 ]
             },
             {
-                type: "slider",
-                id: "size",
-                name: "Emoji Size",
-                note: "The size of the emoji in pixels. 40 is recommended.",
-                value: 40,
-                markers:[16,20,32,40,64],
-                stickToMarkers:true
+                type: 'dropdown',
+                id: 'unavailable',
+                name: 'Allow Unavailable Emoji',
+                note: 'Allow using emoji that would normally even be unavailable to Nitro users. For example emoji which became unavailable because a server lost it\'s boost tier.',
+                value: 'allow',
+                options: [
+                    {
+                        label: 'Allow',
+                        value: 'allow'
+                    },
+                    {
+                        label: 'Show Confirmation Dialog',
+                        value: 'showDialog'
+                    },
+                    {
+                        label: 'Don\'t Allow',
+                        value: 'off'
+                    }
+                ]
             },
             {
-                type: "switch",
-                id: "allowUnavailable",
-                name: "Allow Unavailable Emoji",
-                note: "Allow using emoji that would normally even be unavailable to Nitro users. For example emoji which became unavailable because a server lost it's boost tier.",
-                value: true
-            },
-            {
-                type: "switch",
-                id: "sendDirectly",
-                name: "Send Directly",
-                note: "Send the emoji link in a message directly instead of putting it in the chat box.",
-                value: false
+                type: 'dropdown',
+                id: 'external',
+                name: 'Allow External Emoji',
+                note: 'Allow External Emoji for servers that have them disabled.',
+                value: 'off',
+                options: [
+                    {
+                        label: 'Don\'t Allow',
+                        value: 'off'
+                    },
+                    {
+                        label: 'Show Confirmation Dialog',
+                        value: 'showDialog'
+                    },
+                    {
+                        label: 'Allow',
+                        value: 'allow'
+                    }
+                ]
             }
         ]
     };
     return !global.ZeresPluginLibrary ? class {
         constructor() { this._config = config; }
         load() {
-            BdApi.showConfirmationModal("Library plugin is needed", 
+            BdApi.showConfirmationModal('Library plugin is needed', 
                 [`The library plugin needed for ${config.info.name} is missing. Please click Download Now to install it.`], {
-                confirmText: "Download",
-                cancelText: "Cancel",
+                confirmText: 'Download',
+                cancelText: 'Cancel',
                 onConfirm: () => {
-                    require("request").get("https://rauenzi.github.io/BDPluginLibrary/release/0PluginLibrary.plugin.js", async (error, response, body) => {
-                        if (error) return require("electron").shell.openExternal("https://betterdiscord.app/Download?id=9");
-                        await new Promise(r => require("fs").writeFile(require("path").join(BdApi.Plugins.folder, "0PluginLibrary.plugin.js"), body, r));
+                    require('request').get('https://rauenzi.github.io/BDPluginLibrary/release/0PluginLibrary.plugin.js', async (error, response, body) => {
+                        if (error) return require('electron').shell.openExternal('https://betterdiscord.app/Download?id=9');
+                        await new Promise(r => require('fs').writeFile(require('path').join(BdApi.Plugins.folder, '0PluginLibrary.plugin.js'), body, r));
                     });
                 }
             });
@@ -158,7 +194,11 @@ module.exports = (() => {
                     DiscordPermissions,
                     UserStore,
                     SelectedChannelStore,
-                    ChannelStore
+                    ChannelStore,
+                    DiscordConstants: { 
+                        EmojiDisabledReasons,
+                        EmojiIntention
+                    } 
                 }
             } = Api;
 
@@ -167,6 +207,7 @@ module.exports = (() => {
             const EmojiPicker = WebpackModules.findByUniqueProperties(['useEmojiSelectHandler']);
             const ExpressionPicker = WebpackModules.getModule(e => e.type?.displayName === "ExpressionPicker");
             const MessageUtilities = WebpackModules.getByProps("sendMessage");
+            const EmojiFilter = WebpackModules.getByProps('getEmojiUnavailableReason');
 
             const disabledEmojiSelector = new DOMTools.Selector(WebpackModules.getByProps('emojiItemDisabled')?.emojiItemDisabled);
             const removeGrayscaleClass = `${config.info.name}--remove-grayscale`;
@@ -209,37 +250,72 @@ module.exports = (() => {
                                 }
                             }
                         }
+                        if (this.settings.showExternal) {
+                            const selectedChannel = ChannelStore.getChannel(SelectedChannelStore.getChannelId());
+                            for(const emoji of ret.validNonShortcutEmojis) {
+                                if (EmojiFilter.getEmojiUnavailableReason({
+                                        channel: selectedChannel,
+                                        emoji,
+                                        intention: EmojiIntention.CHAT,
+                                        bypassPatch:true
+                                    }) === EmojiDisabledReasons.DISALLOW_EXTERNAL) {
+                                    ret.content = this.replaceEmoji(ret.content, emoji);
+                                }
+                            }
+                        }
                         return ret;
                     });
 
                     // override emoji picker to allow selecting emotes
                     Patcher.after(EmojiPicker, 'useEmojiSelectHandler', (_, args, ret) => {
-                        const { onSelectEmoji, closePopout } = args[0];
+                        const { onSelectEmoji, closePopout, selectedChannel } = args[0];
                         const self = this;
 
                         return function (data, state) {
                             if (state.toggleFavorite) return ret.apply(this, arguments);
 
-                            if (self.settings.allowUnavailable || data.emoji?.available) {
-                                if (data.isDisabled) {
-                                    const perms = self.hasEmbedPerms();
-                                    if (!perms && self.settings.missingEmbedPerms == 'nothing') return; 
-                                    if (!perms && self.settings.missingEmbedPerms == 'showDialog') {
-                                        BdApi.showConfirmationModal(
-                                            "Missing Image Embed Permissions", 
-                                            [`It looks like you are trying to send an Emoji using Freemoji but you dont have the permissions to send embeded images in this channel. You can choose to send it anyway but it will only show as a link.`], {
-                                            confirmText: "Send Anyway",
-                                            cancelText: "Cancel",
-                                            onConfirm: () => {
-                                                self.selectEmoji({emoji: data.emoji, isFinalSelection: state.isFinalSelection, onSelectEmoji, closePopout});
-                                            }
-                                        });
-                                        return;
-                                    }
+                            const emoji = data.emoji;
+                            const isFinalSelection = state.isFinalSelection;
+
+                            if (self.getEmojiUnavailableReason(emoji, selectedChannel) === EmojiDisabledReasons.DISALLOW_EXTERNAL) {
+                                if (self.settings.external == 'off') return;
+
+                                if (self.settings.external == 'showDialog') {
+                                    BdApi.showConfirmationModal(
+                                        "Sending External Emoji", 
+                                        [`It looks like you are trying to send an an External Emoji in a server that would normally allow it. Do you still want to send it?`], {
+                                        confirmText: "Send External Emoji",
+                                        cancelText: "Cancel",
+                                        onConfirm: () => {
+                                            self.selectEmoji({emoji, isFinalSelection, onSelectEmoji, selectedChannel, closePopout, disabled: true});
+                                        }
+                                    });
+                                    return;
                                 }
-                                self.selectEmoji({emoji: data.emoji, isFinalSelection: state.isFinalSelection, onSelectEmoji, closePopout});
+                                self.selectEmoji({emoji, isFinalSelection, onSelectEmoji, closePopout, selectedChannel, disabled: true});
+
+                            } else if (!emoji.available) {
+                                if (self.settings.unavailable == 'off') return;
+
+                                if (self.settings.external == 'showDialog') {
+                                    BdApi.showConfirmationModal(
+                                        "Sending Unavailable Emoji", 
+                                        [`It looks like you are trying to send an an Emoji that would normally even be unavailable to Nitro users. Do you still want to send it?`], {
+                                        confirmText: "Send Unavailable Emoji",
+                                        cancelText: "Cancel",
+                                        onConfirm: () => {
+                                            self.selectEmoji({emoji, isFinalSelection, onSelectEmoji, closePopout, selectedChannel, disabled: true});
+                                        }
+                                    });
+                                    return;
+                                }
+                                self.selectEmoji({emoji, isFinalSelection, onSelectEmoji, closePopout, selectedChannel, disabled: true});
+                                
+                            } else {
+
+                                self.selectEmoji({emoji, isFinalSelection, onSelectEmoji, closePopout, selectedChannel, disabled: data.isDisabled});
+
                             }
-                            
                         }
                     });
 
@@ -249,20 +325,57 @@ module.exports = (() => {
                         if (this.settings.removeGrayscale!='always' && !this.hasEmbedPerms()) return;
                         Utilities.getNestedProp(ret, "props.children.props").className += ` ${removeGrayscaleClass}`
                     });
+
+                    Patcher.after(EmojiFilter, 'getEmojiUnavailableReason', (_, [{intention, bypassPatch}], ret) => {
+                        if (intention!==EmojiIntention.CHAT || bypassPatch || !this.settings.showExternal) return;
+                        return ret===EmojiDisabledReasons.DISALLOW_EXTERNAL ? null : ret;
+                    })
                 }
 
-                selectEmoji({emoji, isFinalSelection, onSelectEmoji, closePopout}) {
-                    if (this.settings.sendDirectly) {
-                        MessageUtilities.sendMessage(SelectedChannelStore.getChannelId(), {content: `${emoji.url}&size=${this.settings.size}`});
+                selectEmoji({emoji, isFinalSelection, onSelectEmoji, closePopout, selectedChannel, disabled}) {
+                    if (disabled) {
+                        const perms = this.hasEmbedPerms(selectedChannel);
+                        if (!perms && this.settings.missingEmbedPerms == 'nothing') return; 
+                        if (!perms && this.settings.missingEmbedPerms == 'showDialog') {
+                            BdApi.showConfirmationModal(
+                                "Missing Image Embed Permissions", 
+                                [`It looks like you are trying to send an Emoji using Freemoji but you dont have the permissions to send embeded images in this channel. You can choose to send it anyway but it will only show as a link.`], {
+                                confirmText: "Send Anyway",
+                                cancelText: "Cancel",
+                                onConfirm: () => {
+                                    if (this.settings.sendDirectly) {
+                                        MessageUtilities.sendMessage(selectedChannel.id, {content: `${emoji.url}&size=${this.settings.size}`});
+                                    } else {
+                                        onSelectEmoji(emoji, isFinalSelection);
+                                    }
+                                }
+                            });
+                            return;
+                        }
+                        if (this.settings.sendDirectly) {
+                            MessageUtilities.sendMessage(SelectedChannelStore.getChannelId(), {content: `${emoji.url}&size=${this.settings.size}`});
+                        } else {
+                            onSelectEmoji(emoji, isFinalSelection);
+                        }
                     } else {
                         onSelectEmoji(emoji, isFinalSelection);
                     }
+                    
                     if(isFinalSelection) closePopout();
                 }
 
-                hasEmbedPerms() {
+                getEmojiUnavailableReason(emoji, channel, intention) {
+                    return EmojiFilter.getEmojiUnavailableReason({
+                        channel: channel || ChannelStore.getChannel(SelectedChannelStore.getChannelId()),
+                        emoji,
+                        intention: EmojiIntention.CHAT || intention,
+                        bypassPatch:true
+                    })
+                }
+
+                hasEmbedPerms(channelParam) {
                     if (!this.currentUser) this.currentUser = UserStore.getCurrentUser();
-                    const channel = ChannelStore.getChannel(SelectedChannelStore.getChannelId());
+                    const channel = channelParam || ChannelStore.getChannel(SelectedChannelStore.getChannelId());
                     if (!channel.guild_id) return true;
                     return Permissions.can(DiscordPermissions.EMBED_LINKS, this.currentUser.id, channel)
                 }
