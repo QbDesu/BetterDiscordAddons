@@ -5,7 +5,7 @@
 * @author Qb, An0
 * @authorId 133659541198864384
 * @license LGPLv3 - https://www.gnu.org/licenses/lgpl-3.0.txt
-* @version 1.5.0
+* @version 1.5.1
 * @invite gj7JFa6mF8
 * @source https://github.com/QbDesu/BetterDiscordAddons/blob/potato/Plugins/Freemoji
 * @updateUrl https://raw.githubusercontent.com/QbDesu/BetterDiscordAddons/potato/Plugins/Freemoji/Freemoji.plugin.js
@@ -49,7 +49,7 @@ module.exports = (() => {
                     github_username: 'An00nymushun'
                 }
             ],
-            version: '1.5.0',
+            version: '1.5.1',
             description: 'Send emoji external emoji and animated emoji without Nitro.',
             github: 'https://github.com/QbDesu/BetterDiscordAddons/blob/potato/Plugins/Freemoji',
             github_raw: 'https://raw.githubusercontent.com/QbDesu/BetterDiscordAddons/potato/Plugins/Freemoji/Freemoji.plugin.js'
@@ -250,7 +250,7 @@ module.exports = (() => {
                                 }
                             }
                         }
-                        if (this.settings.showExternal) {
+                        if (this.settings.external) {
                             const selectedChannel = ChannelStore.getChannel(SelectedChannelStore.getChannelId());
                             for(const emoji of ret.validNonShortcutEmojis) {
                                 if (EmojiFilter.getEmojiUnavailableReason({
@@ -327,7 +327,7 @@ module.exports = (() => {
                     });
 
                     Patcher.after(EmojiFilter, 'getEmojiUnavailableReason', (_, [{intention, bypassPatch}], ret) => {
-                        if (intention!==EmojiIntention.CHAT || bypassPatch || !this.settings.showExternal) return;
+                        if (intention!==EmojiIntention.CHAT || bypassPatch || !this.settings.external) return;
                         return ret===EmojiDisabledReasons.DISALLOW_EXTERNAL ? null : ret;
                     })
                 }
