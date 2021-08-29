@@ -5,7 +5,7 @@
 * @author Qb, An0
 * @authorId 133659541198864384
 * @license LGPLv3 - https://www.gnu.org/licenses/lgpl-3.0.txt
-* @version 1.5.1
+* @version 1.5.2
 * @invite gj7JFa6mF8
 * @source https://github.com/QbDesu/BetterDiscordAddons/blob/potato/Plugins/Freemoji
 * @updateUrl https://raw.githubusercontent.com/QbDesu/BetterDiscordAddons/potato/Plugins/Freemoji/Freemoji.plugin.js
@@ -49,14 +49,13 @@ module.exports = (() => {
                     github_username: 'An00nymushun'
                 }
             ],
-            version: '1.5.1',
+            version: '1.5.2',
             description: 'Send emoji external emoji and animated emoji without Nitro.',
             github: 'https://github.com/QbDesu/BetterDiscordAddons/blob/potato/Plugins/Freemoji',
             github_raw: 'https://raw.githubusercontent.com/QbDesu/BetterDiscordAddons/potato/Plugins/Freemoji/Freemoji.plugin.js'
         },
         changelog: [
-            { title: 'Features', type: 'feature', items: ['Added an option to allow sending external emoji on servers that normally don\'t allow sending external emoji.'] },
-            { title: 'Changes', type: 'change', items: ['Added more plugin settings and sorted them to be in a more sensible order.'] }
+            { title: 'Temporary Fix', type: 'feature', items: ['Temporarily disabled checking for embed perms until I get around to properly fixing it.'] }
         ],
         defaultConfig: [
             {
@@ -251,14 +250,8 @@ module.exports = (() => {
                             }
                         }
                         if (this.settings.external) {
-                            const selectedChannel = ChannelStore.getChannel(SelectedChannelStore.getChannelId());
                             for(const emoji of ret.validNonShortcutEmojis) {
-                                if (EmojiFilter.getEmojiUnavailableReason({
-                                        channel: selectedChannel,
-                                        emoji,
-                                        intention: EmojiIntention.CHAT,
-                                        bypassPatch:true
-                                    }) === EmojiDisabledReasons.DISALLOW_EXTERNAL) {
+                                if (this.getEmojiUnavailableReason(emoji) === EmojiDisabledReasons.DISALLOW_EXTERNAL) {
                                     ret.content = this.replaceEmoji(ret.content, emoji);
                                 }
                             }
@@ -374,6 +367,7 @@ module.exports = (() => {
                 }
 
                 hasEmbedPerms(channelParam) {
+                    return true; //temporarily bypass this code until we can get the permissions
                     if (!this.currentUser) this.currentUser = UserStore.getCurrentUser();
                     const channel = channelParam || ChannelStore.getChannel(SelectedChannelStore.getChannelId());
                     if (!channel.guild_id) return true;
