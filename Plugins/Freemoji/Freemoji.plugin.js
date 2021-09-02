@@ -5,7 +5,7 @@
 * @author Qb, An0
 * @authorId 133659541198864384
 * @license LGPLv3 - https://www.gnu.org/licenses/lgpl-3.0.txt
-* @version 1.5.2
+* @version 1.5.3
 * @invite gj7JFa6mF8
 * @source https://github.com/QbDesu/BetterDiscordAddons/blob/potato/Plugins/Freemoji
 * @updateUrl https://raw.githubusercontent.com/QbDesu/BetterDiscordAddons/potato/Plugins/Freemoji/Freemoji.plugin.js
@@ -49,13 +49,13 @@ module.exports = (() => {
                     github_username: 'An00nymushun'
                 }
             ],
-            version: '1.5.2',
+            version: '1.5.3',
             description: 'Send emoji external emoji and animated emoji without Nitro.',
             github: 'https://github.com/QbDesu/BetterDiscordAddons/blob/potato/Plugins/Freemoji',
             github_raw: 'https://raw.githubusercontent.com/QbDesu/BetterDiscordAddons/potato/Plugins/Freemoji/Freemoji.plugin.js'
         },
         changelog: [
-            { title: 'Temporary Fix', type: 'feature', items: ['Temporarily disabled checking for embed perms until I get around to properly fixing it.'] }
+            { title: 'Bug Fixes', type: 'fix', items: ['Fixed detection of missing embed permissions.'] }
         ],
         defaultConfig: [
             {
@@ -367,11 +367,10 @@ module.exports = (() => {
                 }
 
                 hasEmbedPerms(channelParam) {
-                    return true; //temporarily bypass this code until we can get the permissions
                     if (!this.currentUser) this.currentUser = UserStore.getCurrentUser();
                     const channel = channelParam || ChannelStore.getChannel(SelectedChannelStore.getChannelId());
                     if (!channel.guild_id) return true;
-                    return Permissions.can(DiscordPermissions.EMBED_LINKS, this.currentUser.id, channel)
+                    return Permissions.can(DiscordPermissions.EMBED_LINKS, channel, this.currentUser.id)
                 }
 
                 cleanup() {
