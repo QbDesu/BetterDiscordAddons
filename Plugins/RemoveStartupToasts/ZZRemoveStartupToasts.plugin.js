@@ -4,7 +4,7 @@
 * @description Removes addon loading toasts when starting BetterDiscord.
 * @author Qb
 * @authorId 133659541198864384
-* @version 1.0.0
+* @version 1.0.1
 * @invite gj7JFa6mF8
 * @source https://github.com/QbDesu/BetterDiscordAddons/blob/potato/Plugins/RemoveStartupToasts
 * @updateUrl https://raw.githubusercontent.com/QbDesu/BetterDiscordAddons/potato/Plugins/RemoveStartupToasts/ZZRemoveStartupToasts.plugin.js
@@ -37,7 +37,7 @@ module.exports = (() => {
     const config = {
         info: {
             name: "RemoveStartupToasts",
-            version: "1.0.0",
+            version: "1.0.1",
             github_raw: "https://raw.githubusercontent.com/QbDesu/BetterDiscordAddons/potato/Plugins/RemoveStartupToasts/ZZRemoveStartupToasts.plugin.js"
         }
     };
@@ -70,7 +70,7 @@ module.exports = (() => {
             }
             
             onStart() {
-                document.querySelectorAll('.bd-toast').forEach(e=>e.remove());
+                window.setTimeout(()=>document.querySelectorAll('.bd-toast').forEach(e=>e.remove()),0);
             }
         };
     };
