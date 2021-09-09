@@ -3,7 +3,7 @@
 * @description Automatically set the notification settings of servers you join.
 * @author Qb
 * @authorId 133659541198864384
-* @version 1.0.0
+* @version 1.0.1
 * @invite gj7JFa6mF8
 * @source https://github.com/QbDesu/BetterDiscordAddons/blob/potato/Plugins/GuildNotificationDefaults
 * @updateUrl https://raw.githubusercontent.com/QbDesu/BetterDiscordAddons/potato/Plugins/GuildNotificationDefaults/GuildNotificationDefaults.plugin.js
@@ -36,7 +36,7 @@ module.exports = (() => {
     const config = {
         info: {
             name: "GuildNotificationDefaults",
-            version: "1.0.0",
+            version: "1.0.1",
             github_raw: "https://raw.githubusercontent.com/QbDesu/BetterDiscordAddons/potato/Plugins/GuildNotificationDefaults/GuildNotificationDefaults.plugin.js"
         },
         defaultConfig: [
@@ -136,6 +136,7 @@ module.exports = (() => {
 			onInviteAccept({invite: {guild: {id}}}) {
 				GuildNotifications.updateGuildNotificationSettings(id, {
 					muted: this.settings.muted,
+					message_notifications: this.settings.message_notifications,
 					supress_roles: this.settings.supress_roles,
 					supress_everyone: this.settings.supress_everyone,
 					mobile_push: this.settings.mobile_push
