@@ -5,7 +5,7 @@
 * @author Qb, An0
 * @authorId 133659541198864384
 * @license LGPLv3 - https://www.gnu.org/licenses/lgpl-3.0.txt
-* @version 1.5.3
+* @version 1.5.4
 * @invite gj7JFa6mF8
 * @source https://github.com/QbDesu/BetterDiscordAddons/blob/potato/Plugins/Freemoji
 * @updateUrl https://raw.githubusercontent.com/QbDesu/BetterDiscordAddons/potato/Plugins/Freemoji/Freemoji.plugin.js
@@ -49,13 +49,14 @@ module.exports = (() => {
                     github_username: 'An00nymushun'
                 }
             ],
-            version: '1.5.3',
+            version: '1.5.4',
             description: 'Send emoji external emoji and animated emoji without Nitro.',
             github: 'https://github.com/QbDesu/BetterDiscordAddons/blob/potato/Plugins/Freemoji',
             github_raw: 'https://raw.githubusercontent.com/QbDesu/BetterDiscordAddons/potato/Plugins/Freemoji/Freemoji.plugin.js'
         },
         changelog: [
-            { title: 'Bug Fixes', type: 'fix', items: ['Fixed detection of missing embed permissions.'] }
+            { title: 'Features', type: 'added', items: ['There is a new size setting for 48px which is the size of regular Discord emoji.'] },
+            { title: 'Bug Fixes', type: 'fix', items: ['Fixed size setting not working.'] }
         ],
         defaultConfig: [
             {
@@ -67,11 +68,11 @@ module.exports = (() => {
             },
             {
                 type: 'slider',
-                id: 'size',
+                id: 'emojiSize',
                 name: 'Emoji Size',
-                note: 'The size of the emoji in pixels. 40 is recommended.',
-                value: 40,
-                markers:[16,20,32,40,64],
+                note: 'The size of the emoji in pixels. 48 is recommended because it is the size of regular Discord emoji.',
+                value: 48,
+                markers:[32, 40, 48, 60, 64],
                 stickToMarkers:true
             },
             {
@@ -211,6 +212,8 @@ module.exports = (() => {
             const disabledEmojiSelector = new DOMTools.Selector(WebpackModules.getByProps('emojiItemDisabled')?.emojiItemDisabled);
             const removeGrayscaleClass = `${config.info.name}--remove-grayscale`;
 
+            const SIZE_REGEX = /([?&]size=)(\d+)/;
+
             return class Freemoji extends Plugin {
                 removeGrayscaleCss = `
                 .${removeGrayscaleClass} ${disabledEmojiSelector} {
@@ -225,7 +228,7 @@ module.exports = (() => {
 
                 replaceEmoji(text, emoji) {
                     const emojiString = `<${emoji.animated ? "a" : ""}:${emoji.originalName || emoji.name}:${emoji.id}>`;
-                    const emojiURL = `${emoji.url}&size=${this.settings.size}`;
+                    const emojiURL = this.getEmojiUrl(emoji);
                     return text.replace(emojiString, emojiURL);
                 }
 
@@ -337,7 +340,7 @@ module.exports = (() => {
                                 cancelText: "Cancel",
                                 onConfirm: () => {
                                     if (this.settings.sendDirectly) {
-                                        MessageUtilities.sendMessage(selectedChannel.id, {content: `${emoji.url}&size=${this.settings.size}`});
+                                        MessageUtilities.sendMessage(selectedChannel.id, {content: this.getEmojiUrl(emoji)});
                                     } else {
                                         onSelectEmoji(emoji, isFinalSelection);
                                     }
@@ -346,7 +349,7 @@ module.exports = (() => {
                             return;
                         }
                         if (this.settings.sendDirectly) {
-                            MessageUtilities.sendMessage(SelectedChannelStore.getChannelId(), {content: `${emoji.url}&size=${this.settings.size}`});
+                            MessageUtilities.sendMessage(SelectedChannelStore.getChannelId(), {content: this.getEmojiUrl(emoji)});
                         } else {
                             onSelectEmoji(emoji, isFinalSelection);
                         }
@@ -364,6 +367,12 @@ module.exports = (() => {
                         intention: EmojiIntention.CHAT || intention,
                         bypassPatch:true
                     })
+                }
+
+                getEmojiUrl(emoji) {
+                    return emoji.url.includes("size=") ?
+                        emoji.url.replace(SIZE_REGEX,`$1${this.settings.emojiSize}`) :
+                        `${emoji.url}&size=${this.settings.emojiSize}`;
                 }
 
                 hasEmbedPerms(channelParam) {
