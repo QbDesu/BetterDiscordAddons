@@ -5,7 +5,7 @@
 * @author Qb, An0
 * @authorId 133659541198864384
 * @license LGPLv3 - https://www.gnu.org/licenses/lgpl-3.0.txt
-* @version 1.5.4
+* @version 1.5.5
 * @invite gj7JFa6mF8
 * @source https://github.com/QbDesu/BetterDiscordAddons/blob/potato/Plugins/Freemoji
 * @updateUrl https://raw.githubusercontent.com/QbDesu/BetterDiscordAddons/potato/Plugins/Freemoji/Freemoji.plugin.js
@@ -49,12 +49,13 @@ module.exports = (() => {
                     github_username: 'An00nymushun'
                 }
             ],
-            version: '1.5.4',
+            version: '1.5.5',
             description: 'Send emoji external emoji and animated emoji without Nitro.',
             github: 'https://github.com/QbDesu/BetterDiscordAddons/blob/potato/Plugins/Freemoji',
             github_raw: 'https://raw.githubusercontent.com/QbDesu/BetterDiscordAddons/potato/Plugins/Freemoji/Freemoji.plugin.js'
         },
         changelog: [
+            { title: 'Changes', type: 'changed', items: ['Reworked the way the grayscale removal works so it should now work with any theme.'] },
             { title: 'Features', type: 'added', items: ['There is a new size setting for 48px which is the size of regular Discord emoji.'] },
             { title: 'Bug Fixes', type: 'fix', items: ['Fixed size setting not working.'] }
         ],
@@ -183,12 +184,9 @@ module.exports = (() => {
         const plugin = (Plugin, Api) => {
             const {
                 Patcher,
-                PluginUtilities,
                 WebpackModules,
                 Toasts,
                 Logger,
-                Utilities,
-                DOMTools,
                 DiscordModules: {
                     Permissions,
                     DiscordPermissions,
@@ -205,26 +203,15 @@ module.exports = (() => {
             const Emojis = WebpackModules.findByUniqueProperties(['getDisambiguatedEmojiContext','search']);
             const EmojiParser = WebpackModules.findByUniqueProperties(['parse', 'parsePreprocessor', 'unparse']);
             const EmojiPicker = WebpackModules.findByUniqueProperties(['useEmojiSelectHandler']);
-            const ExpressionPicker = WebpackModules.getModule(e => e.type?.displayName === "ExpressionPicker");
             const MessageUtilities = WebpackModules.getByProps("sendMessage");
             const EmojiFilter = WebpackModules.getByProps('getEmojiUnavailableReason');
 
-            const disabledEmojiSelector = new DOMTools.Selector(WebpackModules.getByProps('emojiItemDisabled')?.emojiItemDisabled);
-            const removeGrayscaleClass = `${config.info.name}--remove-grayscale`;
+            const EmojiPickerListRow = WebpackModules.find(m=>m?.default?.displayName=='EmojiPickerListRow');
 
             const SIZE_REGEX = /([?&]size=)(\d+)/;
 
             return class Freemoji extends Plugin {
-                removeGrayscaleCss = `
-                .${removeGrayscaleClass} ${disabledEmojiSelector} {
-                    filter: grayscale(0%);
-                }
-                `;
                 currentUser = null;
-
-                addStyles() {
-                    PluginUtilities.addStyle(removeGrayscaleClass, this.removeGrayscaleCss);
-                }
 
                 replaceEmoji(text, emoji) {
                     const emojiString = `<${emoji.animated ? "a" : ""}:${emoji.originalName || emoji.name}:${emoji.id}>`;
@@ -315,17 +302,16 @@ module.exports = (() => {
                         }
                     });
 
-                    // add remove grayscale class to expression picker
-                    Patcher.after(ExpressionPicker, 'type', (_, args, ret) => {
-                        if (this.settings.removeGrayscale=='never') return;
-                        if (this.settings.removeGrayscale!='always' && !this.hasEmbedPerms()) return;
-                        Utilities.getNestedProp(ret, "props.children.props").className += ` ${removeGrayscaleClass}`
-                    });
-
                     Patcher.after(EmojiFilter, 'getEmojiUnavailableReason', (_, [{intention, bypassPatch}], ret) => {
                         if (intention!==EmojiIntention.CHAT || bypassPatch || !this.settings.external) return;
                         return ret===EmojiDisabledReasons.DISALLOW_EXTERNAL ? null : ret;
-                    })
+                    });
+
+                    Patcher.before(EmojiPickerListRow,'default',(_,[{emojiDescriptors}])=>{
+                        if (this.settings.removeGrayscale=='never') return;
+                        if (this.settings.removeGrayscale!='always' && !this.hasEmbedPerms()) return;
+                        emojiDescriptors.forEach(e=>{e.isDisabled=false});
+                    });
                 }
 
                 selectEmoji({emoji, isFinalSelection, onSelectEmoji, closePopout, selectedChannel, disabled}) {
@@ -384,17 +370,11 @@ module.exports = (() => {
 
                 cleanup() {
                     Patcher.unpatchAll();
-                    this.removeStyles();
-                }
-
-                removeStyles() {
-                    PluginUtilities.removeStyle(removeGrayscaleClass);
                 }
 
                 onStart() {
                     try{
                         this.patch();
-                        this.addStyles();
                     } catch (e) {
                         Toasts.error(`${config.info.name}: An error occured during intialiation: ${e}`);
                         Logger.error(`Error while patching: ${e}`);
@@ -406,14 +386,7 @@ module.exports = (() => {
                     this.cleanup();
                 }
             
-                getSettingsPanel() {
-                    const panel = this.buildSettingsPanel();
-                    panel.addListener(() => {
-                        this.removeStyles();
-                        this.addStyles();
-                    });
-                    return panel.getElement();
-                }
+                getSettingsPanel() { return this.buildSettingsPanel().getElement(); }
             };
         };
         return plugin(Plugin, Api);
