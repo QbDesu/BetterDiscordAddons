@@ -5,7 +5,7 @@
 * @author Qb, An0
 * @authorId 133659541198864384
 * @license LGPLv3 - https://www.gnu.org/licenses/lgpl-3.0.txt
-* @version 1.5.5
+* @version 1.5.6
 * @invite gj7JFa6mF8
 * @source https://github.com/QbDesu/BetterDiscordAddons/blob/potato/Plugins/Freemoji
 * @updateUrl https://raw.githubusercontent.com/QbDesu/BetterDiscordAddons/potato/Plugins/Freemoji/Freemoji.plugin.js
@@ -49,15 +49,14 @@ module.exports = (() => {
                     github_username: 'An00nymushun'
                 }
             ],
-            version: '1.5.5',
+            version: '1.5.6',
             description: 'Send emoji external emoji and animated emoji without Nitro.',
             github: 'https://github.com/QbDesu/BetterDiscordAddons/blob/potato/Plugins/Freemoji',
             github_raw: 'https://raw.githubusercontent.com/QbDesu/BetterDiscordAddons/potato/Plugins/Freemoji/Freemoji.plugin.js'
         },
         changelog: [
-            { title: 'Changes', type: 'changed', items: ['Reworked the way the grayscale removal works so it should now work with any theme.'] },
-            { title: 'Features', type: 'added', items: ['There is a new size setting for 48px which is the size of regular Discord emoji.'] },
-            { title: 'Bug Fixes', type: 'fix', items: ['Fixed size setting not working.'] }
+            { title: 'Bug Fixes', types: 'fixed', items: ['Fixed Send Directly option not working because of the reworked grayscale removal.'] },
+            { title: 'Previous Changes', type: 'changed', items: ['Reworked the way the grayscale removal works so it should now work with any theme.','There is a new size setting for 48px which is the size of regular Discord emoji.','Fixed size setting not working.'] },
         ],
         defaultConfig: [
             {
@@ -295,9 +294,7 @@ module.exports = (() => {
                                 self.selectEmoji({emoji, isFinalSelection, onSelectEmoji, closePopout, selectedChannel, disabled: true});
                                 
                             } else {
-
                                 self.selectEmoji({emoji, isFinalSelection, onSelectEmoji, closePopout, selectedChannel, disabled: data.isDisabled});
-
                             }
                         }
                     });
@@ -310,12 +307,17 @@ module.exports = (() => {
                     Patcher.before(EmojiPickerListRow,'default',(_,[{emojiDescriptors}])=>{
                         if (this.settings.removeGrayscale=='never') return;
                         if (this.settings.removeGrayscale!='always' && !this.hasEmbedPerms()) return;
-                        emojiDescriptors.forEach(e=>{e.isDisabled=false});
+                        emojiDescriptors.filter(e=>e.isDisabled).forEach(e=>{e.isDisabled=false; e.wasDisabled=true;});
+                    });
+                    Patcher.after(EmojiPickerListRow,'default',(_,[{emojiDescriptors}])=>{
+                        emojiDescriptors.filter(e=>e.wasDisabled).forEach(e=>{e.isDisabled=true; delete e.wasDisabled;});
                     });
                 }
 
                 selectEmoji({emoji, isFinalSelection, onSelectEmoji, closePopout, selectedChannel, disabled}) {
+                    console.log("disabled", disabled)
                     if (disabled) {
+                        console.log("disabled")
                         const perms = this.hasEmbedPerms(selectedChannel);
                         if (!perms && this.settings.missingEmbedPerms == 'nothing') return; 
                         if (!perms && this.settings.missingEmbedPerms == 'showDialog') {
