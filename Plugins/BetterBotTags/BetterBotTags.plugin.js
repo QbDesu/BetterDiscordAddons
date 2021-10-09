@@ -1,12 +1,13 @@
 /**
 * @name BetterBotTags
-* @description Replace bot tags with webhook tags for webhook messages
+* @description Some improvements for bot tags, like the addition of webhook tags.
 * @author Qb, Ben855
 * @authorId 133659541198864384
 * @version 1.0.0
 * @invite gj7JFa6mF8
 * @source https://github.com/QbDesu/BetterDiscordAddons/blob/potato/Plugins/BetterBotTags
 * @updateUrl https://raw.githubusercontent.com/QbDesu/BetterDiscordAddons/potato/Plugins/BetterBotTags/BetterBotTags.plugin.js
+* @license MIT
 */
 /*@cc_on
 @if (@_jscript)
