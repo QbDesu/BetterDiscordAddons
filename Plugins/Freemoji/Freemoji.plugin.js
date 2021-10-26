@@ -5,7 +5,7 @@
 * @author Qb, An0
 * @authorId 133659541198864384
 * @license LGPLv3 - https://www.gnu.org/licenses/lgpl-3.0.txt
-* @version 1.5.6
+* @version 1.5.7
 * @invite gj7JFa6mF8
 * @source https://github.com/QbDesu/BetterDiscordAddons/blob/potato/Plugins/Freemoji
 * @updateUrl https://raw.githubusercontent.com/QbDesu/BetterDiscordAddons/potato/Plugins/Freemoji/Freemoji.plugin.js
@@ -49,14 +49,13 @@ module.exports = (() => {
                     github_username: 'An00nymushun'
                 }
             ],
-            version: '1.5.6',
+            version: '1.5.7',
             description: 'Send emoji external emoji and animated emoji without Nitro.',
             github: 'https://github.com/QbDesu/BetterDiscordAddons/blob/potato/Plugins/Freemoji',
             github_raw: 'https://raw.githubusercontent.com/QbDesu/BetterDiscordAddons/potato/Plugins/Freemoji/Freemoji.plugin.js'
         },
         changelog: [
-            { title: 'Bug Fixes', types: 'fixed', items: ['Fixed Send Directly option not working because of the reworked grayscale removal.'] },
-            { title: 'Previous Changes', type: 'changed', items: ['Reworked the way the grayscale removal works so it should now work with any theme.','There is a new size setting for 48px which is the size of regular Discord emoji.','Fixed size setting not working.'] },
+            { title: 'Bug Fixes', types: 'fixed', items: ['Fixed embed perm detection stopped working.'] }
         ],
         defaultConfig: [
             {
@@ -143,7 +142,7 @@ module.exports = (() => {
                 id: 'external',
                 name: 'Allow External Emoji',
                 note: 'Allow External Emoji for servers that have them disabled.',
-                value: 'off',
+                value: 'showDialog',
                 options: [
                     {
                         label: 'Don\'t Allow',
@@ -152,10 +151,6 @@ module.exports = (() => {
                     {
                         label: 'Show Confirmation Dialog',
                         value: 'showDialog'
-                    },
-                    {
-                        label: 'Allow',
-                        value: 'allow'
                     }
                 ]
             }
@@ -172,6 +167,7 @@ module.exports = (() => {
                     require('request').get('https://rauenzi.github.io/BDPluginLibrary/release/0PluginLibrary.plugin.js', async (error, response, body) => {
                         if (error) return require('electron').shell.openExternal('https://betterdiscord.app/Download?id=9');
                         await new Promise(r => require('fs').writeFile(require('path').join(BdApi.Plugins.folder, '0PluginLibrary.plugin.js'), body, r));
+                        window.location.reload();
                     });
                 }
             });
@@ -364,10 +360,15 @@ module.exports = (() => {
                 }
 
                 hasEmbedPerms(channelParam) {
-                    if (!this.currentUser) this.currentUser = UserStore.getCurrentUser();
-                    const channel = channelParam || ChannelStore.getChannel(SelectedChannelStore.getChannelId());
-                    if (!channel.guild_id) return true;
-                    return Permissions.can(DiscordPermissions.EMBED_LINKS, channel, this.currentUser.id)
+                    try {
+                        if (!this.currentUser) this.currentUser = UserStore.getCurrentUser();
+                        const channel = channelParam || ChannelStore.getChannel(SelectedChannelStore.getChannelId());
+                        if (!channel.guild_id) return true;
+                        return Permissions.can(DiscordPermissions.EMBED_LINKS, this.currentUser.id, channel)
+                    } catch(e) {
+                        Logger.error("Error while detecting embed permissions", e);
+                        return true;
+                    }
                 }
 
                 cleanup() {
