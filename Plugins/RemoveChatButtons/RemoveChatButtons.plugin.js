@@ -4,7 +4,7 @@
 * @description Remove annoying buttons like the Gift button from the chat box.
 * @author Qb
 * @authorId 133659541198864384
-* @version 1.1.0
+* @version 1.1.1
 * @invite gj7JFa6mF8
 * @source https://github.com/QbDesu/BetterDiscordAddons/blob/potato/Plugins/RemoveChatButtons
 * @updateUrl https://raw.githubusercontent.com/QbDesu/BetterDiscordAddons/potato/Plugins/RemoveChatButtons/RemoveChatButtons.plugin.js
@@ -44,7 +44,7 @@ module.exports = (() => {
                     github_username: "QbDesu"
                 }
             ],
-            version: "1.1.0",
+            version: "1.1.1",
             description: "Remove annoying buttons like the Gift button from the chat box.",
             github: "https://github.com/QbDesu/BetterDiscordAddons/blob/potato/Plugins/RemoveChatButtons",
             github_raw: "https://raw.githubusercontent.com/QbDesu/BetterDiscordAddons/potato/Plugins/RemoveChatButtons/RemoveChatButtons.plugin.js"
@@ -94,145 +94,148 @@ module.exports = (() => {
             }
         ],
         changelog: [
-            { title: "Features", type: "added", items: ["Added CSS-Only Mode to the config options"] },
-            { title: "Changes", type: "changes", items: [
-                "Refactored logic for hiding most buttons.",
-                "Changed plugin name to avoid confusion with newly released plugin"
-            ] }
+            {
+                title: "Bug Fixes", type: "fixed", items: [
+                    "Fixed CSS-only mode not working for GIF and Gift buttons."
+                ]
+            }
         ]
     };
     return !global.ZeresPluginLibrary ? class {
         constructor() { this._config = config; }
         load() {
-            BdApi.showConfirmationModal("Library plugin is needed", 
-            [`The library plugin needed for ${config.info.name} is missing. Please click Download Now to install it.`], {
+            BdApi.showConfirmationModal("Library plugin is needed",
+                [`The library plugin needed for ${config.info.name} is missing. Please click Download Now to install it.`], {
                 confirmText: "Download",
                 cancelText: "Cancel",
                 onConfirm: () => {
                     require("request").get("https://rauenzi.github.io/BDPluginLibrary/release/0PluginLibrary.plugin.js", async (error, response, body) => {
-                    if (error) return require("electron").shell.openExternal("https://betterdiscord.app/Download?id=9");
-                    await new Promise(r => require("fs").writeFile(require("path").join(BdApi.Plugins.folder, "0PluginLibrary.plugin.js"), body, r));
-                });
-            }
-        });
+                        if (error) return require("electron").shell.openExternal("https://betterdiscord.app/Download?id=9");
+                        await new Promise(r => require("fs").writeFile(require("path").join(BdApi.Plugins.folder, "0PluginLibrary.plugin.js"), body, r));
+                        window.location.reload();
+                    });
+                }
+            });
+        }
+        start() { }
+        stop() { }
     }
-    start() { }
-    stop() { }
-}
-: (([Plugin, Api]) => {
-        const plugin = (Plugin, Api) => {
-            const {
-                Patcher,
-                DOMTools,
-                WebpackModules,
-                PluginUtilities,
-                Logger,
-                DiscordModules
-            } = Api;
+        : (([Plugin, Api]) => {
+            const plugin = (Plugin, Api) => {
+                const {
+                    Patcher,
+                    DOMTools,
+                    WebpackModules,
+                    PluginUtilities,
+                    Logger,
+                    DiscordModules
+                } = Api;
 
-            // thanks to Strencher for pointing out these modules
-            const ChannelTextAreaContainer = WebpackModules.find(m => m?.type?.render?.displayName === "ChannelTextAreaContainer")?.type;
-            //const ChannelPremiumGiftButton = WebpackModules.find(m => m.type.displayName === "ChannelPremiumGiftButton")?.type;
-            const ChannelGIFPickerButton = WebpackModules.find(m => m.type.render.displayName === "ChannelGIFPickerButton")?.type;
-            const ChannelEmojiPicker = WebpackModules.find(m => m.type.render.displayName === "ChannelEmojiPicker")?.type;
-            const ChannelStickerPickerButton = WebpackModules.find(m => m.type.render.displayName === "ChannelStickerPickerButton")?.type;
+                // thanks to Strencher for pointing out these modules
+                const ChannelTextAreaContainer = WebpackModules.find(m => m?.type?.render?.displayName === "ChannelTextAreaContainer")?.type;
+                //const ChannelPremiumGiftButton = WebpackModules.find(m => m.type.displayName === "ChannelPremiumGiftButton")?.type;
+                const ChannelGIFPickerButton = WebpackModules.find(m => m.type.render.displayName === "ChannelGIFPickerButton")?.type;
+                const ChannelEmojiPicker = WebpackModules.find(m => m.type.render.displayName === "ChannelEmojiPicker")?.type;
+                const ChannelStickerPickerButton = WebpackModules.find(m => m.type.render.displayName === "ChannelStickerPickerButton")?.type;
 
-            const buttonClasses = WebpackModules.getByProps("emojiButton", "stickerButton");
-            const channelTextAreaSelector = new DOMTools.Selector(buttonClasses.channelTextArea);
-            const emojiButtonSelector = new DOMTools.Selector(buttonClasses.emojiButton);
-            const stickerButtonSelector = new DOMTools.Selector(buttonClasses.stickerButton);
-            const attachButtonSelector = new DOMTools.Selector(buttonClasses.attachButton);
-            const getCssKey = name => `${config.info.name}--${name}`;
-            const getCssRule = child => `${channelTextAreaSelector} ${child} { display: none; }`;
-            
-            return class RemoveChatButtons extends Plugin {
-                hideGiftKey = getCssKey("hideGiftButton");
-                hideGifKey = getCssKey("hideGifButton");
-                hideEmojiKey = getCssKey("hideEmojiButton");
-                hideStickerKey = getCssKey("hideStickerButton");
-                hideAttachKey = getCssKey("hideAttachButton");
-                //
-                hideEmojiButtonCss = getCssRule(emojiButtonSelector);
-                hideStickerButtonCss = getCssRule(stickerButtonSelector);
-                hideAttachButtonCss = getCssRule(attachButtonSelector);
-                
-                addStyles() {
-                    if(this.settings.cssOnly){
-                        if (this.settings.giftButton) {
-                            PluginUtilities.addStyle(
-                                this.hideGiftKey,
-                                getCssRule(`[aria-label="${DiscordModules.Strings.PREMIUM_GIFT_BUTTON_LABEL}"]`)
-                            )
+                const {PREMIUM_GIFT_BUTTON_LABEL, GIF_BUTTON_LABEL} = WebpackModules.getByProps("PREMIUM_GIFT_BUTTON_LABEL");
+
+                const buttonClasses = WebpackModules.getByProps("emojiButton", "stickerButton");
+                const channelTextAreaSelector = new DOMTools.Selector(buttonClasses.channelTextArea);
+                const emojiButtonSelector = new DOMTools.Selector(buttonClasses.emojiButton);
+                const stickerButtonSelector = new DOMTools.Selector(buttonClasses.stickerButton);
+                const attachButtonSelector = new DOMTools.Selector(buttonClasses.attachButton);
+                const getCssKey = name => `${config.info.name}--${name}`;
+                const getCssRule = child => `${channelTextAreaSelector} ${child} { display: none; }`;
+
+                return class RemoveChatButtons extends Plugin {
+                    hideGiftKey = getCssKey("hideGiftButton");
+                    hideGifKey = getCssKey("hideGifButton");
+                    hideEmojiKey = getCssKey("hideEmojiButton");
+                    hideStickerKey = getCssKey("hideStickerButton");
+                    hideAttachKey = getCssKey("hideAttachButton");
+                    //
+                    hideEmojiButtonCss = getCssRule(emojiButtonSelector);
+                    hideStickerButtonCss = getCssRule(stickerButtonSelector);
+                    hideAttachButtonCss = getCssRule(attachButtonSelector);
+
+                    addStyles() {
+                        if (this.settings.cssOnly) {
+                            if (this.settings.giftButton) {
+                                PluginUtilities.addStyle(
+                                    this.hideGiftKey,
+                                    getCssRule(`[aria-label="${PREMIUM_GIFT_BUTTON_LABEL}"]`)
+                                )
+                            }
+                            if (this.settings.gifButton) {
+                                PluginUtilities.addStyle(
+                                    this.hideGifKey,
+                                    getCssRule(`[aria-label="${GIF_BUTTON_LABEL}"]`)
+                                )
+                            }
+                            if (this.settings.emojiButton) PluginUtilities.addStyle(this.hideEmojiKey, this.hideEmojiButtonCss);
+                            if (this.settings.stickerButton) PluginUtilities.addStyle(this.hideStickerKey, this.hideStickerButtonCss);
+                            if (this.settings.attachButton) PluginUtilities.addStyle(this.hideAttachKey, this.hideAttachButtonCss);
                         }
-                        if (this.settings.gifButton) {
-                            PluginUtilities.addStyle(
-                                this.hideGifKey,
-                                getCssRule(`[aria-label="${DiscordModules.Strings.GIF_BUTTON_LABEL}"]`)
-                            )
-                        }
-                        if (this.settings.emojiButton) PluginUtilities.addStyle(this.hideEmojiKey, this.hideEmojiButtonCss);
-                        if (this.settings.stickerButton) PluginUtilities.addStyle(this.hideStickerKey, this.hideStickerButtonCss);
-                        if (this.settings.attachButton) PluginUtilities.addStyle(this.hideAttachKey, this.hideAttachButtonCss);
                     }
-                }
-                
-                patch() {
-                    Patcher.before(ChannelTextAreaContainer, "render", (_, [props]) => {
-                        if (!this.settings.cssOnly && this.settings.giftButton) props.shouldRenderPremiumGiftButton = false;
-                        if (!this.settings.cssOnly && this.settings.attachButton) props.renderAttachButton = () => {};
-                    });
-                    Patcher.after(ChannelGIFPickerButton, "render", (_, args, ret) => {
-                        return !this.settings.cssOnly && this.settings.gifButton ? null : ret;
-                    });
-                    Patcher.after(ChannelEmojiPicker, "render", (_, args, ret) => {
-                        return !this.settings.cssOnly && this.settings.emojiButton ? null : ret;
-                    });
-                    Patcher.after(ChannelStickerPickerButton, "render", (_, args, ret) => {
-                        return !this.settings.cssOnly && this.settings.stickerButton ? null : ret;
-                    });
-                }
 
-                cleanup() {
-                    Patcher.unpatchAll();
-                    this.removeStyles();
-                }
-                
-                removeStyles() {
-                    PluginUtilities.removeStyle(this.hideGiftKey);
-                    PluginUtilities.removeStyle(this.hideGifKey);
-                    PluginUtilities.removeStyle(this.hideEmojiKey);
-                    PluginUtilities.removeStyle(this.hideStickerKey);
-                    PluginUtilities.removeStyle(this.hideAttachKey);
-                }
+                    patch() {
+                        Patcher.before(ChannelTextAreaContainer, "render", (_, [props]) => {
+                            if (!this.settings.cssOnly && this.settings.giftButton) props.shouldRenderPremiumGiftButton = false;
+                            if (!this.settings.cssOnly && this.settings.attachButton) props.renderAttachButton = () => { };
+                        });
+                        Patcher.after(ChannelGIFPickerButton, "render", (_, args, ret) => {
+                            return !this.settings.cssOnly && this.settings.gifButton ? null : ret;
+                        });
+                        Patcher.after(ChannelEmojiPicker, "render", (_, args, ret) => {
+                            return !this.settings.cssOnly && this.settings.emojiButton ? null : ret;
+                        });
+                        Patcher.after(ChannelStickerPickerButton, "render", (_, args, ret) => {
+                            return !this.settings.cssOnly && this.settings.stickerButton ? null : ret;
+                        });
+                    }
 
-                onStart() {
-                    try{
-                        this.patch();
-                    } catch(e) {
-                        Toasts.warn(`${config.info.name}: An error occured during intialiation, falling back to CSS-Only mode.`);
-                        Logger.error(`Error while patching: ${e}`);
-                        console.error(e);
-                        this.settings.cssOnly = true;
+                    cleanup() {
                         Patcher.unpatchAll();
-                    }
-                    this.addStyles();
-                }
-                
-                onStop() {
-                    this.cleanup();
-                }
-            
-                getSettingsPanel() {
-                    const panel = this.buildSettingsPanel();
-                    panel.addListener(() => {
                         this.removeStyles();
+                    }
+
+                    removeStyles() {
+                        PluginUtilities.removeStyle(this.hideGiftKey);
+                        PluginUtilities.removeStyle(this.hideGifKey);
+                        PluginUtilities.removeStyle(this.hideEmojiKey);
+                        PluginUtilities.removeStyle(this.hideStickerKey);
+                        PluginUtilities.removeStyle(this.hideAttachKey);
+                    }
+
+                    onStart() {
+                        try {
+                            this.patch();
+                        } catch (e) {
+                            Toasts.warn(`${config.info.name}: An error occured during intialiation, falling back to CSS-Only mode.`);
+                            Logger.error(`Error while patching: ${e}`);
+                            console.error(e);
+                            this.settings.cssOnly = true;
+                            Patcher.unpatchAll();
+                        }
                         this.addStyles();
-                    });
-                    return panel.getElement();
-                }
+                    }
+
+                    onStop() {
+                        this.cleanup();
+                    }
+
+                    getSettingsPanel() {
+                        const panel = this.buildSettingsPanel();
+                        panel.addListener(() => {
+                            this.removeStyles();
+                            this.addStyles();
+                        });
+                        return panel.getElement();
+                    }
+                };
             };
-        };
-        return plugin(Plugin, Api);
-    })(global.ZeresPluginLibrary.buildPlugin(config));
+            return plugin(Plugin, Api);
+        })(global.ZeresPluginLibrary.buildPlugin(config));
 })();
 /*@end@*/
