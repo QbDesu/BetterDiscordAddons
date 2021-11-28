@@ -1,5 +1,5 @@
 /**
-* @name Double Click Voice Channels
+* @name DoubleClickVoiceChannels
 * @description Requires you to double click voice channels to join them.
 * @author Qb, Twizzer#0001 & AAGaming#9395
 * @authorId 133659541198864384
@@ -36,7 +36,7 @@ WScript.Quit();
 module.exports = (() => {
     const config = {
         info: {
-            name: "Double Click Voice Channels",
+            name: "DoubleClickVoiceChannels",
             version: "1.0.0",
             github_raw: "https://raw.githubusercontent.com/QbDesu/BetterDiscordAddons/potato/Plugins/DoubleClickVoiceChannels/DoubleClickVoiceChannels.plugin.js"
         }
