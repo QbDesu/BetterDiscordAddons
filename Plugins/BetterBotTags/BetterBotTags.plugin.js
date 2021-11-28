@@ -37,9 +37,12 @@ module.exports = (() => {
     const config = {
         info: {
             name: "BetterBotTags",
-            version: "1.0.0",
+            version: "1.0.1",
             github_raw: "https://raw.githubusercontent.com/QbDesu/BetterDiscordAddons/potato/Plugins/BetterBotTags/BetterBotTags.plugin.js"
         },
+        changelog: [
+            { title: 'Bug Fixes', types: 'fixed', items: ['Fixed bot tag type not displaying the proper text under some circumstances.'] }
+        ],
         defaultConfig: [
             {
                 type: "switch",
@@ -131,7 +134,7 @@ module.exports = (() => {
                         });
 
                         Patcher.after(WebpackModules.find(m => m.default.displayName === "BotTag"), "default", (_, [{ type }], res) => {
-                            if (type == null) return;
+                            if (type == null) type=BotTagTypes.BOT;
 
                             res.props.className = `${res.props.className} ${config.info.name}--tag ${config.info.name}--${BotTagTypes[type]}`;
                             const label = Utilities.findInReactTree(res, e => typeof e?.children === "string");
