@@ -5,7 +5,7 @@
 * @author Qb, An0
 * @authorId 133659541198864384
 * @license LGPLv3 - https://www.gnu.org/licenses/lgpl-3.0.txt
-* @version 1.6.0
+* @version 1.7.0
 * @invite gj7JFa6mF8
 * @source https://github.com/QbDesu/BetterDiscordAddons/blob/potato/Plugins/Freemoji
 * @updateUrl https://raw.githubusercontent.com/QbDesu/BetterDiscordAddons/potato/Plugins/Freemoji/Freemoji.plugin.js
@@ -49,14 +49,14 @@ module.exports = (() => {
                     github_username: 'An00nymushun'
                 }
             ],
-            version: '1.6.0',
+            version: '1.7.0',
             description: 'Send emoji external emoji and animated emoji without Nitro.',
             github: 'https://github.com/QbDesu/BetterDiscordAddons/blob/potato/Plugins/Freemoji',
             github_raw: 'https://raw.githubusercontent.com/QbDesu/BetterDiscordAddons/potato/Plugins/Freemoji/Freemoji.plugin.js'
         },
         changelog: [
-            { title: 'Bug Fixes', types: 'fixed', items: ['Fixed emoji selection in chat emoji autocompletion.', 'Fixed unavailable emoji feature... I think. Always enabled now.'] },
-            { title: 'Changes', types: 'changed', items: ['Readded "Allow" option for external emoji, still defaulting to dialog.', 'Added 2 larger emote sizes back in.'] }
+            { title: 'Features', types: 'added', items: ['Added an option to automatically split messages containing emoji links, enabled by default.'] },
+            { title: 'Bug Fixes', types: 'fixed', items: ['Fixed "Allow" option for external emoji.'] }
         ],
         defaultConfig: [
             {
@@ -64,6 +64,13 @@ module.exports = (() => {
                 id: 'sendDirectly',
                 name: 'Send Directly',
                 note: 'Send the emoji link in a message directly instead of putting it in the chat box.',
+                value: false
+            },
+            {
+                type: 'switch',
+                id: 'split',
+                name: 'Automatically Split Emoji Messages',
+                note: 'Automatically splits messages containing emoji links so there won\'t be links in the middle of your messages.',
                 value: false
             },
             {
@@ -134,7 +141,7 @@ module.exports = (() => {
                     },
                     {
                         label: 'Allow',
-                        value: 'showDialog'
+                        value: 'allow'
                     }
                 ]
             }
@@ -188,6 +195,7 @@ module.exports = (() => {
                 const EmojiPickerListRow = WebpackModules.find(m => m?.default?.displayName == 'EmojiPickerListRow');
 
                 const SIZE_REGEX = /([?&]size=)(\d+)/;
+                const EMOJI_SPLIT_LINK_REGEX = /(?:(?:^|\s)(?=https:\/\/cdn\.discordapp\.com\/emojis\/\d+\.(?:png|gif)(?:\?size\=\d+)?))|(?:(?<=https:\/\/cdn\.discordapp\.com\/emojis\/\d+\.(?:png|gif)(?:\?size\=\d+)?)(?:$|\s))/
 
                 return class Freemoji extends Plugin {
                     currentUser = null;
@@ -195,7 +203,7 @@ module.exports = (() => {
                     replaceEmoji(text, emoji) {
                         const emojiString = `<${emoji.animated ? "a" : ""}:${emoji.originalName || emoji.name}:${emoji.id}>`;
                         const emojiURL = this.getEmojiUrl(emoji);
-                        return text.replace(emojiString, emojiURL);
+                        return text.replace(emojiString, emojiURL+" ");
                     }
 
                     patch() {
@@ -274,12 +282,29 @@ module.exports = (() => {
                         Patcher.after(EmojiPickerListRow, 'default', (_, [{ emojiDescriptors }]) => {
                             emojiDescriptors.filter(e => e.wasDisabled).forEach(e => { e.isDisabled = true; delete e.wasDisabled; });
                         });
+
+                        Patcher.instead(MessageUtilities, 'sendMessage', (thisObj, args, originalFn) => {
+                            if (!this.settings.split) return originalFn.apply(thisObj, args);
+                            const [channel, message] = args;
+                            const split = message.content.split(EMOJI_SPLIT_LINK_REGEX).map(s => s.trim()).filter(s => s.length);
+                            if (split.length <= 1) return originalFn.apply(thisObj, args);
+
+
+                            const promises = [];
+                            for (let i = 0; i < split.length; i++) {
+                                const text = split[i];
+                                promises.push(new Promise((resolve, reject) => {
+                                    window.setTimeout(() => {
+                                        originalFn.call(thisObj, channel, { content: text, validNonShortcutEmojis: [] }).then(resolve).catch(reject);
+                                    }, i * 100);
+                                }));
+                            }
+                            return Promise.all(promises).then(ret => ret[ret.length-1]);
+                        });
                     }
 
                     selectEmoji({ emoji, isFinalSelection, onSelectEmoji, closePopout, selectedChannel, disabled }) {
-                        console.log("disabled", disabled)
                         if (disabled) {
-                            console.log("disabled")
                             const perms = this.hasEmbedPerms(selectedChannel);
                             if (!perms && this.settings.missingEmbedPerms == 'nothing') return;
                             if (!perms && this.settings.missingEmbedPerms == 'showDialog') {
