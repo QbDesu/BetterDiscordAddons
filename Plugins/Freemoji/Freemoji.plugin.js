@@ -195,7 +195,7 @@ module.exports = (() => {
                 const EmojiPickerListRow = WebpackModules.find(m => m?.default?.displayName == 'EmojiPickerListRow');
 
                 const SIZE_REGEX = /([?&]size=)(\d+)/;
-                const EMOJI_SPLIT_LINK_REGEX = /(?:(?:^|\s)(?=https:\/\/cdn\.discordapp\.com\/emojis\/\d+\.(?:png|gif)(?:\?size\=\d+)?))|(?:(?<=https:\/\/cdn\.discordapp\.com\/emojis\/\d+\.(?:png|gif)(?:\?size\=\d+)?)(?:$|\s))/
+                const EMOJI_SPLIT_LINK_REGEX = /(?:(?:^|\s)(?=https:\/\/cdn\.discordapp\.com\/emojis\/\d+\.(?:png|gif|webp)(?:\?size\=\d+&quality=\w)?))|(?:(?<=https:\/\/cdn\.discordapp\.com\/emojis\/\d+\.(?:png|gif|webp)(?:\?size\=\d+&quality=\w)?)(?:$|\s))/
 
                 return class Freemoji extends Plugin {
                     currentUser = null;
@@ -203,7 +203,7 @@ module.exports = (() => {
                     replaceEmoji(text, emoji) {
                         const emojiString = `<${emoji.animated ? "a" : ""}:${emoji.originalName || emoji.name}:${emoji.id}>`;
                         const emojiURL = this.getEmojiUrl(emoji);
-                        return text.replace(emojiString, emojiURL+" ");
+                        return text.replace(emojiString, emojiURL + " ");
                     }
 
                     patch() {
@@ -299,7 +299,7 @@ module.exports = (() => {
                                     }, i * 100);
                                 }));
                             }
-                            return Promise.all(promises).then(ret => ret[ret.length-1]);
+                            return Promise.all(promises).then(ret => ret[ret.length - 1]);
                         });
                     }
 
