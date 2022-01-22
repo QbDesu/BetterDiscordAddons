@@ -195,7 +195,7 @@ module.exports = (() => {
                 const EmojiPickerListRow = WebpackModules.find(m => m?.default?.displayName == 'EmojiPickerListRow');
 
                 const SIZE_REGEX = /([?&]size=)(\d+)/;
-                const EMOJI_SPLIT_LINK_REGEX = /(https:\/\/cdn\.discordapp\.com\/emojis\/\d+\.(?:png|gif|webp)(?:\?size\=\d+&quality=\w*)?)/
+                const EMOJI_SPLIT_LINK_REGEX = /(https:\/\/cdn\.discordapp\.com\/emojis\/\d+\.(?:png|gif|webp)(?:\?size\=\d+&quality=\w+&size=\w*)?)/
 
                 return class Freemoji extends Plugin {
                     currentUser = null;
