@@ -4,7 +4,7 @@
 * @description Remove annoying buttons like the Gift button from the chat box.
 * @author Qb
 * @authorId 133659541198864384
-* @version 1.1.1
+* @version 1.1.2
 * @invite gj7JFa6mF8
 * @source https://github.com/QbDesu/BetterDiscordAddons/blob/potato/Plugins/RemoveChatButtons
 * @updateUrl https://raw.githubusercontent.com/QbDesu/BetterDiscordAddons/potato/Plugins/RemoveChatButtons/RemoveChatButtons.plugin.js
@@ -44,7 +44,7 @@ module.exports = (() => {
                     github_username: "QbDesu"
                 }
             ],
-            version: "1.1.1",
+            version: "1.1.2",
             description: "Remove annoying buttons like the Gift button from the chat box.",
             github: "https://github.com/QbDesu/BetterDiscordAddons/blob/potato/Plugins/RemoveChatButtons",
             github_raw: "https://raw.githubusercontent.com/QbDesu/BetterDiscordAddons/potato/Plugins/RemoveChatButtons/RemoveChatButtons.plugin.js"
@@ -96,7 +96,7 @@ module.exports = (() => {
         changelog: [
             {
                 title: "Bug Fixes", type: "fixed", items: [
-                    "Fixed CSS-only mode not working for GIF and Gift buttons."
+                    "Fixed Nitro Gift Button not being removed after Discord update when not using CSS-only mode."
                 ]
             }
         ]
@@ -127,13 +127,12 @@ module.exports = (() => {
                     DOMTools,
                     WebpackModules,
                     PluginUtilities,
-                    Logger,
-                    DiscordModules
+                    Logger
                 } = Api;
 
                 // thanks to Strencher for pointing out these modules
                 const ChannelTextAreaContainer = WebpackModules.find(m => m?.type?.render?.displayName === "ChannelTextAreaContainer")?.type;
-                //const ChannelPremiumGiftButton = WebpackModules.find(m => m.type.displayName === "ChannelPremiumGiftButton")?.type;
+                const ChannelPremiumGiftButton = WebpackModules.find(m => m?.default?.type.displayName === "ChannelPremiumGiftButton")?.default;
                 const ChannelGIFPickerButton = WebpackModules.find(m => m.type.render.displayName === "ChannelGIFPickerButton")?.type;
                 const ChannelEmojiPicker = WebpackModules.find(m => m.type.render.displayName === "ChannelEmojiPicker")?.type;
                 const ChannelStickerPickerButton = WebpackModules.find(m => m.type.render.displayName === "ChannelStickerPickerButton")?.type;
@@ -181,8 +180,10 @@ module.exports = (() => {
 
                     patch() {
                         Patcher.before(ChannelTextAreaContainer, "render", (_, [props]) => {
-                            if (!this.settings.cssOnly && this.settings.giftButton) props.shouldRenderPremiumGiftButton = false;
                             if (!this.settings.cssOnly && this.settings.attachButton) props.renderAttachButton = () => { };
+                        });
+                        Patcher.after(ChannelPremiumGiftButton, "type", (_, args, ret) => {
+                            return !this.settings.cssOnly && this.settings.giftButton ? null : ret;
                         });
                         Patcher.after(ChannelGIFPickerButton, "render", (_, args, ret) => {
                             return !this.settings.cssOnly && this.settings.gifButton ? null : ret;
