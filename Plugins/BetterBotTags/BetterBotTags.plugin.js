@@ -37,11 +37,11 @@ module.exports = (() => {
     const config = {
         info: {
             name: "BetterBotTags",
-            version: "1.0.1",
+            version: "1.0.2",
             github_raw: "https://raw.githubusercontent.com/QbDesu/BetterDiscordAddons/potato/Plugins/BetterBotTags/BetterBotTags.plugin.js"
         },
         changelog: [
-            { title: 'Bug Fixes', types: 'fixed', items: ['Fixed bot tag type not displaying the proper text under some circumstances.'] }
+            { title: 'Bug Fixes', types: 'Fixed Crashin when trying to display Webhook Bot Tags. Temporary workaround might cause webhook tags not to have an icon, sorry.'] }
         ],
         defaultConfig: [
             {
@@ -97,7 +97,7 @@ module.exports = (() => {
                 const BotTagTypes = { ...(BotTag.default.Types || BotTag.BotTagTypes), WEBHOOK: 13, CLYDE: 12, 13: "WEBHOOK", 12: "CLYDE" };
                 const botTagClasses = WebpackModules.getByProps("botTagCozy");
                 const DiscordTag = WebpackModules.find(m => m.default.displayName === "DiscordTag");
-                const WebhookIcon = WebpackModules.getByDisplayName("Webhook");
+                let WebhookIcon = WebpackModules.getByDisplayName("Webhook");
                 const RobotIcon = WebpackModules.getByDisplayName("Robot");
                 const DiscordIcon = WebpackModules.getByDisplayName("Discord");
 
@@ -152,9 +152,16 @@ module.exports = (() => {
                                 }
                             }
 
+                            console.log("pre-icons", res.props.children)
+
+                            console.log(WebhookIcon);
+                            console.log(RobotIcon);
+                            console.log(DiscordIcon);
+
                             if (this.settings.icons) {
                                 if (type == BotTagTypes.WEBHOOK) {
-                                    res.props.children.unshift(React.createElement(WebhookIcon, { height: "16", width: "16" }));
+                                    if(this.ensureWebhookIcon())
+                                        res.props.children.unshift(React.createElement(WebhookIcon, { height: "16", width: "16" }));
                                 } else if (type == BotTagTypes.CLYDE) {
                                     res.props.children.unshift(React.createElement(DiscordIcon, { height: "16", width: "16" }));
                                 } else if (type == BotTagTypes.BOT) {
@@ -163,6 +170,8 @@ module.exports = (() => {
                                     res.props.children.unshift(React.createElement(DiscordIcon, { height: "16", width: "16" }));
                                 }
                             }
+
+                            console.log("post-icons", res.props.children)
 
                         });
 
@@ -175,6 +184,11 @@ module.exports = (() => {
                                 }
                             }
                         });
+                    }
+
+                    ensureWebhookIcon(){
+                        if (WebhookIcon) return WebhookIcon;
+                        return WebhookIcon = WebpackModules.getByDisplayName("Webhook");
                     }
 
                     isClyde(user) {
