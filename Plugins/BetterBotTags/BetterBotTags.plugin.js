@@ -37,11 +37,11 @@ module.exports = (() => {
     const config = {
         info: {
             name: "BetterBotTags",
-            version: "1.0.2",
+            version: "1.0.3",
             github_raw: "https://raw.githubusercontent.com/QbDesu/BetterDiscordAddons/potato/Plugins/BetterBotTags/BetterBotTags.plugin.js"
         },
         changelog: [
-            { title: 'Bug Fixes', types: 'Fixed Crashin when trying to display Webhook Bot Tags. Temporary workaround might cause webhook tags not to have an icon, sorry.'] }
+            { title: 'Bug Fixes', types: 'fixed', items: ['Fixed Crashin when trying to display Webhook Bot Tags. Temporary workaround might cause webhook tags not to have an icon, sorry.'] }
         ],
         defaultConfig: [
             {
