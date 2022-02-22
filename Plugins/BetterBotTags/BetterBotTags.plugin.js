@@ -152,12 +152,6 @@ module.exports = (() => {
                                 }
                             }
 
-                            console.log("pre-icons", res.props.children)
-
-                            console.log(WebhookIcon);
-                            console.log(RobotIcon);
-                            console.log(DiscordIcon);
-
                             if (this.settings.icons) {
                                 if (type == BotTagTypes.WEBHOOK) {
                                     if(this.ensureWebhookIcon())
@@ -170,8 +164,6 @@ module.exports = (() => {
                                     res.props.children.unshift(React.createElement(DiscordIcon, { height: "16", width: "16" }));
                                 }
                             }
-
-                            console.log("post-icons", res.props.children)
 
                         });
 
