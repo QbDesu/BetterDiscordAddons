@@ -4,7 +4,7 @@
 * @description Remove annoying buttons like the Gift button from the chat box.
 * @author Qb
 * @authorId 133659541198864384
-* @version 1.2.0
+* @version 1.2.1
 * @invite gj7JFa6mF8
 * @source https://github.com/QbDesu/BetterDiscordAddons/blob/potato/Plugins/RemoveChatButtons
 * @updateUrl https://raw.githubusercontent.com/QbDesu/BetterDiscordAddons/potato/Plugins/RemoveChatButtons/RemoveChatButtons.plugin.js
@@ -28,7 +28,7 @@ module.exports = (() => {
                     github_username: "QbDesu"
                 }
             ],
-            version: "1.2.0",
+            version: "1.2.1",
             description: "Remove annoying buttons like the Gift button from the chat box.",
             github: "https://github.com/QbDesu/BetterDiscordAddons/blob/potato/Plugins/RemoveChatButtons",
             github_raw: "https://raw.githubusercontent.com/QbDesu/BetterDiscordAddons/potato/Plugins/RemoveChatButtons/RemoveChatButtons.plugin.js"
@@ -75,12 +75,33 @@ module.exports = (() => {
                 name: "CSS-Only Mode",
                 note: "This is useful in case there is incompatibilities with plugins or themes.",
                 value: false,
+            },
+            {
+                type: "category",
+                name: "Direct Messages",
+                id: "dms",
+                settings: [
+                    {
+                        type: "switch",
+                        name: "Friends Tab",
+                        note: "Removes the friends tab button from the DM list.",
+                        id: "friendsTab",
+                        value: false
+                    },
+                    {
+                        type: "switch",
+                        name: "Nitro Tab",
+                        note: "Removes the nitro tab button from the DM list.",
+                        id: "premiumTab",
+                        value: true
+                    }
+                ]
             }
         ],
         changelog: [
             {
-                title: "Bug Fixes", type: "fixed", items: [
-                    "Fixed all of the chat buttons not being removed after Discord's latest update.",
+                title: "Added", type: "added", items: [
+                    "Added an experimental feature that removes the Nitro tab from the DM list. This will not respect the CSS-Only mode for now."
                 ]
             }
         ]
@@ -114,8 +135,9 @@ module.exports = (() => {
                     Logger
                 } = Api;
 
-                const ChannelTextAreaButtons = WebpackModules.find(m => m.type && m.type.displayName === "ChannelTextAreaButtons")
+                const ChannelTextAreaButtons = WebpackModules.find(m => m.type?.displayName === "ChannelTextAreaButtons")
                 const ChannelTextAreaContainer = WebpackModules.find(m => m?.type?.render?.displayName === "ChannelTextAreaContainer")?.type;
+                const ConnectedPrivateChannelsList = WebpackModules.find(m => m.default?.displayName === "ConnectedPrivateChannelsList");
 
                 const {PREMIUM_GIFT_BUTTON_LABEL, GIF_BUTTON_LABEL} = WebpackModules.getByProps("PREMIUM_GIFT_BUTTON_LABEL");
 
@@ -182,6 +204,21 @@ module.exports = (() => {
                             }
                             if (this.settings.emojiButton) {
                                 const idx = children.findIndex((e)=>e.key=="emoji");
+                                if (idx !== -1) children.splice(idx, 1);
+                            }
+                        });
+                        Patcher.after(ConnectedPrivateChannelsList, "default", (_, [props], ret) => {
+                            const children = props?.children;
+
+                            if (this.settings.dms.friendsTab) {
+                                const idx = children.findIndex((e)=>e?.key=="friends");
+                                if (idx !== -1) children.splice(idx, 1);
+                            }
+                            if (this.settings.dms.premiumTab) {
+                                // doesn't seem to be doing anything but the prop is there, so still doing it for good measure
+                                props.showNitroTab = false;
+                                
+                                const idx = children.findIndex((e)=>e?.key=="premium");
                                 if (idx !== -1) children.splice(idx, 1);
                             }
                         });
