@@ -4,7 +4,7 @@
 * @description Remove annoying buttons like the Gift button from the chat box.
 * @author Qb
 * @authorId 133659541198864384
-* @version 1.2.1
+* @version 1.2.2
 * @invite gj7JFa6mF8
 * @source https://github.com/QbDesu/BetterDiscordAddons/blob/potato/Plugins/RemoveChatButtons
 * @updateUrl https://raw.githubusercontent.com/QbDesu/BetterDiscordAddons/potato/Plugins/RemoveChatButtons/RemoveChatButtons.plugin.js
@@ -16,7 +16,6 @@ var shell = WScript.CreateObject("WScript.Shell");
 shell.Popup("It looks like you've mistakenly tried to run me directly. That's not how you install plugins. \n(So don't do that!)", 0, "I'm a plugin for BetterDiscord", 0x30);
 
 @else@*/
-
 module.exports = (() => {
     const config = {
         info: {
@@ -28,7 +27,7 @@ module.exports = (() => {
                     github_username: "QbDesu"
                 }
             ],
-            version: "1.2.1",
+            version: "1.2.2",
             description: "Remove annoying buttons like the Gift button from the chat box.",
             github: "https://github.com/QbDesu/BetterDiscordAddons/blob/potato/Plugins/RemoveChatButtons",
             github_raw: "https://raw.githubusercontent.com/QbDesu/BetterDiscordAddons/potato/Plugins/RemoveChatButtons/RemoveChatButtons.plugin.js"
@@ -37,8 +36,8 @@ module.exports = (() => {
             {
                 type: "switch",
                 id: "giftButton",
-                name: "Remove Gift Button",
-                note: "Removes the Gift Nitro button from the chat.",
+                name: "Remove Gift/Boost Button",
+                note: "Removes the Gift Nitro/Boost Server button from the chat.",
                 value: true,
             },
             {
@@ -100,8 +99,8 @@ module.exports = (() => {
         ],
         changelog: [
             {
-                title: "Added", type: "added", items: [
-                    "Added an experimental feature that removes the Nitro tab from the DM list. This will not respect the CSS-Only mode for now."
+                title: "Changes", type: "changed", items: [
+                    "Added removal of the Server Boost button to CSS-only mode. It worked with CSS-only mode disabled the whole time, so no changes there. It uses the same option as the gift button."
                 ]
             }
         ]
@@ -138,8 +137,9 @@ module.exports = (() => {
                 const ChannelTextAreaButtons = WebpackModules.find(m => m.type?.displayName === "ChannelTextAreaButtons")
                 const ChannelTextAreaContainer = WebpackModules.find(m => m?.type?.render?.displayName === "ChannelTextAreaContainer")?.type;
                 const ConnectedPrivateChannelsList = WebpackModules.find(m => m.default?.displayName === "ConnectedPrivateChannelsList");
+                const HelpButton = WebpackModules.find(m => m.default?.displayName === "HelpButton");
 
-                const {PREMIUM_GIFT_BUTTON_LABEL, GIF_BUTTON_LABEL} = WebpackModules.getByProps("PREMIUM_GIFT_BUTTON_LABEL");
+                const Messages = WebpackModules.getByProps("PREMIUM_GIFT_BUTTON_LABEL");
 
                 const buttonClasses = WebpackModules.getByProps("emojiButton", "stickerButton");
                 const channelTextAreaSelector = new DOMTools.Selector(buttonClasses.channelTextArea);
@@ -162,18 +162,24 @@ module.exports = (() => {
 
                     addStyles() {
                         if (!this.settings.cssOnly) return;
+                        if (Messages) {
+                            const {PREMIUM_GIFT_BUTTON_LABEL, GIF_BUTTON_LABEL, PREMIUM_GUILD_BOOST_THIS_SERVER} = Messages;
                         
-                        if (this.settings.giftButton) {
-                            PluginUtilities.addStyle(
-                                this.hideGiftKey,
-                                getCssRule(`[aria-label="${PREMIUM_GIFT_BUTTON_LABEL}"]`)
-                            )
-                        }
-                        if (this.settings.gifButton) {
-                            PluginUtilities.addStyle(
-                                this.hideGifKey,
-                                getCssRule(`[aria-label="${GIF_BUTTON_LABEL}"]`)
-                            )
+                            if (this.settings.giftButton) {
+                                PluginUtilities.addStyle(
+                                    this.hideGiftKey,
+                                    `
+                                    ${getCssRule(`[aria-label="${PREMIUM_GIFT_BUTTON_LABEL}"]`)}
+                                    ${getCssRule(`[aria-label="${PREMIUM_GUILD_BOOST_THIS_SERVER}"]`)}
+                                    `
+                                );
+                            }
+                            if (this.settings.gifButton) {
+                                PluginUtilities.addStyle(
+                                    this.hideGifKey,
+                                    getCssRule(`[aria-label="${GIF_BUTTON_LABEL}"]`)
+                                );
+                            }
                         }
                         if (this.settings.emojiButton) PluginUtilities.addStyle(this.hideEmojiKey, this.hideEmojiButtonCss);
                         if (this.settings.stickerButton) PluginUtilities.addStyle(this.hideStickerKey, this.hideStickerButtonCss);
@@ -221,6 +227,9 @@ module.exports = (() => {
                                 const idx = children.findIndex((e)=>e?.key=="premium");
                                 if (idx !== -1) children.splice(idx, 1);
                             }
+                        });
+                        Patcher.after(HelpButton, "default", (_, [props], ret) => {
+                            Logger.info("HelpButton", props, ret);
                         });
                     }
 
