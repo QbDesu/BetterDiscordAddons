@@ -5,7 +5,7 @@
 * @author Qb, An0
 * @authorId 133659541198864384
 * @license LGPLv3 - https://www.gnu.org/licenses/lgpl-3.0.txt
-* @version 1.7.2
+* @version 1.7.3
 * @invite gj7JFa6mF8
 * @source https://github.com/QbDesu/BetterDiscordAddons/blob/potato/Plugins/Freemoji
 * @updateUrl https://raw.githubusercontent.com/QbDesu/BetterDiscordAddons/potato/Plugins/Freemoji/Freemoji.plugin.js
@@ -15,7 +15,6 @@
 
 var shell = WScript.CreateObject("WScript.Shell");
 shell.Popup("It looks like you've mistakenly tried to run me directly. That's not how you install plugins. \n(So don't do that!)", 0, "I'm a plugin for BetterDiscord", 0x30);
-
 
 @else@*/
 
@@ -34,13 +33,13 @@ module.exports = (() => {
                     github_username: 'An00nymushun'
                 }
             ],
-            version: '1.7.2',
+            version: '1.7.3',
             description: 'Send emoji external emoji and animated emoji without Nitro.',
             github: 'https://github.com/QbDesu/BetterDiscordAddons/blob/potato/Plugins/Freemoji',
             github_raw: 'https://raw.githubusercontent.com/QbDesu/BetterDiscordAddons/potato/Plugins/Freemoji/Freemoji.plugin.js'
         },
         changelog: [
-            { title: 'Bug Fixes', types: 'fixed', items: ['Fix embed permission detection.'] }
+            { title: 'Bug Fixes', types: 'fixed', items: ['Stopped clyde from warining your about using unavailable emoji.'] }
         ],
         defaultConfig: [
             {
@@ -203,6 +202,8 @@ module.exports = (() => {
                             for (const emoji of ret.invalidEmojis) {
                                 ret.content = this.replaceEmoji(ret.content, emoji);
                             }
+                            ret.invalidEmojis = [];
+                            
                             for (const emoji of ret.validNonShortcutEmojis) {
                                 if (!emoji.available) {
                                     ret.content = this.replaceEmoji(ret.content, emoji);
