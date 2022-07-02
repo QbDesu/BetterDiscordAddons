@@ -4,7 +4,7 @@
 * @description Remove annoying buttons like the Gift button from the chat box.
 * @author Qb
 * @authorId 133659541198864384
-* @version 1.2.2
+* @version 1.2.3
 * @invite gj7JFa6mF8
 * @source https://github.com/QbDesu/BetterDiscordAddons/blob/potato/Plugins/RemoveChatButtons
 * @updateUrl https://raw.githubusercontent.com/QbDesu/BetterDiscordAddons/potato/Plugins/RemoveChatButtons/RemoveChatButtons.plugin.js
@@ -27,7 +27,7 @@ module.exports = (() => {
                     github_username: "QbDesu"
                 }
             ],
-            version: "1.2.2",
+            version: "1.2.3",
             description: "Remove annoying buttons like the Gift button from the chat box.",
             github: "https://github.com/QbDesu/BetterDiscordAddons/blob/potato/Plugins/RemoveChatButtons",
             github_raw: "https://raw.githubusercontent.com/QbDesu/BetterDiscordAddons/potato/Plugins/RemoveChatButtons/RemoveChatButtons.plugin.js"
@@ -77,6 +77,20 @@ module.exports = (() => {
             },
             {
                 type: "category",
+                name: "Server List",
+                id: "guildList",
+                settings: [
+                    {
+                        type: "switch",
+                        name: "Nitro Button (experimental)",
+                        note: "Removes the obnoxious sticky nitro button from the bottom of the server list. Fuck you Discord.",
+                        id: "nitroButton",
+                        value: true
+                    }
+                ]
+            },
+            {
+                type: "category",
                 name: "Direct Messages",
                 id: "dms",
                 settings: [
@@ -100,7 +114,7 @@ module.exports = (() => {
         changelog: [
             {
                 title: "Changes", type: "changed", items: [
-                    "Added removal of the Server Boost button to CSS-only mode. It worked with CSS-only mode disabled the whole time, so no changes there. It uses the same option as the gift button."
+                    "Adds experimental support to remove the most obnoxious STICKY variant of the nitro button in the guild list. May be a little flaky, won't make any promises nothing else breaks... Fuck you Discord."
                 ]
             }
         ]
@@ -149,6 +163,9 @@ module.exports = (() => {
                 const getCssKey = name => `${config.info.name}--${name}`;
                 const getCssRule = child => `${channelTextAreaSelector} ${child} { display: none; }`;
 
+                const fixedBottomListClasses = WebpackModules.getByProps("fixedBottomList");
+                const listItemClasses = WebpackModules.find(m => m?.listItem && m?.tutorialContainer && !(m?.pill));
+
                 return class RemoveChatButtons extends Plugin {
                     hideGiftKey = getCssKey("hideGiftButton");
                     hideGifKey = getCssKey("hideGifButton");
@@ -159,8 +176,28 @@ module.exports = (() => {
                     hideEmojiButtonCss = getCssRule(emojiButtonSelector);
                     hideStickerButtonCss = getCssRule(stickerButtonSelector);
                     hideAttachButtonCss = getCssRule(attachButtonSelector);
+                    //
+                    hideGuildListNitroButtonKey = getCssKey("hideGuildListNitroButton");
 
                     addStyles() {
+                        if (this.settings.guildList.nitroButton) {
+                            if (fixedBottomListClasses?.fixedBottomList){
+                                if (listItemClasses?.listItem) {
+                                    PluginUtilities.addStyle(
+                                        this.hideGuildListNitroButtonKey,
+                                        `.${fixedBottomListClasses?.fixedBottomList} > .${listItemClasses?.listItem} { display: none; }`
+                                    )
+                                } else {
+                                    PluginUtilities.addStyle(
+                                        this.hideGuildListNitroButtonKey,
+                                        `.${fixedBottomListClasses?.fixedBottomList} > * { display: none; }`
+                                    )
+                                }
+                            } else {
+                                Toasts.warn("Couldn't find class to hide nitro button from guild list.");
+                            }
+                        }
+
                         if (!this.settings.cssOnly) return;
                         if (Messages) {
                             const {PREMIUM_GIFT_BUTTON_LABEL, GIF_BUTTON_LABEL, PREMIUM_GUILD_BOOST_THIS_SERVER} = Messages;
