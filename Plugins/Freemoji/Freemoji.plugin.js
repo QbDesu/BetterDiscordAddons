@@ -290,6 +290,14 @@ module.exports = (() => {
                                         originalFn.call(thisObj, channel, { content: text, validNonShortcutEmojis: [] }).then(resolve).catch(reject);
                                     }, i * 100);
                                 }));
+                                if (i == 0 && args[3].messageReference != undefined) {
+                                    var firstMessage = message;
+                                    firstMessage.content = text;
+                                    args.message = firstMessage;
+                                    originalFn.apply(thisObj, args);
+                                    continue;
+                                }
+                                
                             }
                             return Promise.all(promises).then(ret => ret[ret.length - 1]);
                         });
