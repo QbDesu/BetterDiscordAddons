@@ -127,6 +127,13 @@ module.exports = (() => {
                         value: 'allow'
                     }
                 ]
+            },
+            {
+                type: 'switch',
+                id: 'replacePNG',
+                name: 'Use PNG instead of WEBP',
+                note: 'If the emoji url points to a webp image, replace it with a png',
+                value: false
             }
         ]
     };
@@ -330,9 +337,13 @@ module.exports = (() => {
                     }
 
                     getEmojiUrl(emoji) {
-                        return emoji.url.includes("size=") ?
-                            emoji.url.replace(SIZE_REGEX, `$1${this.settings.emojiSize}`) :
-                            `${emoji.url}&size=${this.settings.emojiSize}`;
+                        var finalEmojiURL = emoji.url;
+                        if (this.settings.replacePNG) {
+                            finalEmojiURL = finalEmojiURL.replace(".webp?", ".png?");
+                        }
+                        return finalEmojiURL.includes("size=") ?
+                            finalEmojiURL.replace(SIZE_REGEX, `$1${this.settings.emojiSize}`) :
+                            `${finalEmojiURL}&size=${this.settings.emojiSize}`;
                     }
 
                     hasEmbedPerms(channelParam) {
