@@ -58,6 +58,48 @@ module.exports = (() => {
             },
             {
                 type: 'slider',
+                id: 'splitDelay',
+                name: 'Split Message Delay',
+                note: 'The delay between each split message in ms.',
+                value: 100,
+                markers: [50, 100, 150, 200, 250, 500, 750, 1000],
+                stickToMarkers: true
+            },
+            {
+                type: 'switch',
+                id: 'splitDelaySlowdown',
+                name: 'Add Slowdown Time',
+                note: 'Adds the current slowmode time to the split message delay.',
+                value: true
+            },
+            {
+                type: 'slider',
+                id: 'splitLimit',
+                name: 'Split Message Limit',
+                note: 'Prevent the user from sending more than this many split messages at once. This setting and the one below is disabled if the value is set to zero.',
+                value: 4,
+                markers: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
+                stickToMarkers: true
+            },
+            {
+                type: 'dropdown',
+                id: 'splitLimitMode',
+                name: 'Split Message Limit Mode',
+                note: 'What should happen to the rest of a message once the limit in the setting above is reached?',
+                value: true,
+                options: [
+                    {
+                        label: 'Send all the remaining text in one message',
+                        value: false
+                    },
+                    {
+                        label: 'Put the text back inside the message box',
+                        value: true
+                    }
+                ]
+            },
+            {
+                type: 'slider',
                 id: 'emojiSize',
                 name: 'Emoji Size',
                 note: 'The size of the emoji in pixels. 48 is recommended because it is the size of regular Discord emoji.',
@@ -181,6 +223,7 @@ module.exports = (() => {
                 const EmojiPicker = WebpackModules.findByUniqueProperties(['useEmojiSelectHandler']);
                 const MessageUtilities = WebpackModules.getByProps("sendMessage");
                 const EmojiFilter = WebpackModules.getByProps('getEmojiUnavailableReason');
+                const SlateEditor = WebpackModules.findByDisplayName('SlateEditor');
 
                 const EmojiPickerListRow = WebpackModules.find(m => m?.default?.displayName == 'EmojiPickerListRow');
 
@@ -274,30 +317,57 @@ module.exports = (() => {
                         Patcher.after(EmojiPickerListRow, 'default', (_, [{ emojiDescriptors }]) => {
                             emojiDescriptors.filter(e => e.wasDisabled).forEach(e => { e.isDisabled = true; delete e.wasDisabled; });
                         });
-
+                        
+                        Patcher.after(SlateEditor.prototype, 'handleOnChange', (ThisEditor, args, ret) => {
+                            this.LastEditor = [ThisEditor.props.editor, ThisEditor.props.channelId];
+                        })
+                        
                         BdApi.Plugins.isEnabled("EmoteReplacer") || Patcher.instead(MessageUtilities, 'sendMessage', (thisObj, args, originalFn) => {
                             if (!this.settings.split || BdApi.Plugins.isEnabled("EmoteReplacer")) return originalFn.apply(thisObj, args);
                             const [channel, message] = args;
                             const split = message.content.split(EMOJI_SPLIT_LINK_REGEX).map(s => s.trim()).filter(s => s.length);
                             if (split.length <= 1) return originalFn.apply(thisObj, args);
-
-
+                            
                             const promises = [];
+                            let finalSplitDelay = this.settings.splitDelay;
+                            try {
+                                finalSplitDelay = BdApi.findModuleByProps("getChannel", "getDMFromUserId").getChannel(this.LastEditor[1]).rateLimitPerUser * 1000 + this.settings.splitDelay;
+                            } catch {}
+                            
                             for (let i = 0; i < split.length; i++) {
-                                const text = split[i];
-                                promises.push(new Promise((resolve, reject) => {
-                                    window.setTimeout(() => {
-                                        originalFn.call(thisObj, channel, { content: text, validNonShortcutEmojis: [] }).then(resolve).catch(reject);
-                                    }, i * 100);
-                                }));
+                                const text = [split[i]]; 
+                                
+                                if (this.settings.splitLimit != 0 && i > this.settings.splitLimit-1) {
+                                    i++;
+                                    while (i < split.length) {
+                                        text.push(split[i]);
+                                        i++;
+                                    }
+                                }
+                                
                                 if (i == 0 && args[3].messageReference != undefined) {
                                     var firstMessage = message;
-                                    firstMessage.content = text;
+                                    firstMessage.content = text.join('\n').trim();
                                     args.message = firstMessage;
                                     originalFn.apply(thisObj, args);
                                     continue;
                                 }
                                 
+                                if (text.join('\n').trim() != "") {
+                                    if (this.settings.splitLimitMode && i > this.settings.splitLimit-1) {
+                                        if (this.LastEditor != undefined) {
+                                            setTimeout(this.LastEditor[0].insertText, this.settings.splitLimit * finalSplitDelay, text.join('\n').trim());
+                                        } else {
+                                            console.error("Unable to return text because this.LastEditor is undefined!");
+                                        }
+                                    } else {
+                                        promises.push(new Promise((resolve, reject) => {
+                                            window.setTimeout(() => {
+                                                originalFn.call(thisObj, channel, { content: text.join('\n').trim(), validNonShortcutEmojis: [] }).then(resolve).catch(reject);
+                                            }, i * finalSplitDelay);
+                                        }));
+                                    }
+                                }
                             }
                             return Promise.all(promises).then(ret => ret[ret.length - 1]);
                         });
