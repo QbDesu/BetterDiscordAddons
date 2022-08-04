@@ -320,34 +320,32 @@ module.exports = (() => {
                         Patcher.after(EmojiPickerListRow, 'default', (_, [{ emojiDescriptors }]) => {
                             emojiDescriptors.filter(e => e.wasDisabled).forEach(e => { e.isDisabled = true; delete e.wasDisabled; });
                         });
-                        
+
                         Patcher.after(SlateEditor.prototype, 'handleOnChange', (ThisEditor, args, ret) => {
                             this.LastEditor = [ThisEditor.props.editor, ThisEditor.props.channelId];
                         })
-                        
+
                         BdApi.Plugins.isEnabled("EmoteReplacer") || Patcher.instead(MessageUtilities, 'sendMessage', (thisObj, args, originalFn) => {
                             if (!this.settings.split || BdApi.Plugins.isEnabled("EmoteReplacer")) return originalFn.apply(thisObj, args);
                             const [channel, message] = args;
                             const split = message.content.split(EMOJI_SPLIT_LINK_REGEX).map(s => s.trim()).filter(s => s.length);
                             if (split.length <= 1) return originalFn.apply(thisObj, args);
-                            
+
                             const promises = [];
                             let finalSplitDelay = this.settings.splitDelay;
                             try {
                                 finalSplitDelay = BdApi.findModuleByProps("getChannel", "getDMFromUserId").getChannel(this.LastEditor[1]).rateLimitPerUser * 1000 + this.settings.splitDelay;
                             } catch {}
-                            
+
                             for (let i = 0; i < split.length; i++) {
-                                const text = [split[i]]; 
-                                
-                                if (this.settings.splitLimit != 0 && i > this.settings.splitLimit-1) {
+                                const text = [split[i]];
+                                if (this.settings.splitLimit != 0 && i > this.settings.splitLimit - 1) {
                                     i++;
                                     while (i < split.length) {
                                         text.push(split[i]);
                                         i++;
                                     }
                                 }
-                                
                                 if (i == 0 && args[3].messageReference != undefined) {
                                     var firstMessage = message;
                                     firstMessage.content = text.join('\n').trim();
@@ -355,9 +353,9 @@ module.exports = (() => {
                                     originalFn.apply(thisObj, args);
                                     continue;
                                 }
-                                
+
                                 if (text.join('\n').trim() != "") {
-                                    if (this.settings.splitLimitMode && i > this.settings.splitLimit-1) {
+                                    if (this.settings.splitLimitMode && i > this.settings.splitLimit - 1) {
                                         if (this.LastEditor != undefined) {
                                             setTimeout(this.LastEditor[0].insertText, this.settings.splitLimit * finalSplitDelay, text.join('\n').trim());
                                         } else {
