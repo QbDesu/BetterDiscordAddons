@@ -63,7 +63,8 @@ module.exports = (() => {
                 note: 'The delay between each split message in ms.',
                 value: 100,
                 markers: [50, 100, 150, 200, 250, 500, 750, 1000],
-                stickToMarkers: true
+                stickToMarkers: true,
+                defaultValue: 100
             },
             {
                 type: 'switch',
@@ -79,7 +80,8 @@ module.exports = (() => {
                 note: 'Prevent the user from sending more than this many split messages at once. This setting and the one below is disabled if the value is set to zero.',
                 value: 4,
                 markers: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
-                stickToMarkers: true
+                stickToMarkers: true,
+                defaultValue: 4
             },
             {
                 type: 'dropdown',
@@ -105,6 +107,7 @@ module.exports = (() => {
                 note: 'The size of the emoji in pixels. 48 is recommended because it is the size of regular Discord emoji.',
                 value: 48,
                 markers: [32, 40, 48, 60, 64, 80, 96],
+                defaultValue: 48,
                 stickToMarkers: true
             },
             {
