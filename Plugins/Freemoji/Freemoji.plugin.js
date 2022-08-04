@@ -346,6 +346,7 @@ module.exports = (() => {
                                         i++;
                                     }
                                 }
+
                                 if (i == 0 && args[3].messageReference != undefined) {
                                     var firstMessage = message;
                                     firstMessage.content = text.join('\n').trim();
