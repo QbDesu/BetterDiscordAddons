@@ -6,7 +6,7 @@ The main reason for that is my disappointment and disgust upon seeing some of th
 
 ## The Guidelines
 
-To clarify, and stop people from spreading more misinformation: The Freemoji plugin was **not** affected by these updated guidelines, and would still be allowed to be an official plugin. But I do no longer wish to cater to people who cry "censorship" because somebody broke their toy that allowed them to see things they weren't supposed to.
+To clarify, and stop people from spreading more misinformation: The Freemoji plugin was **not** affected by these updated guidelines, and would still be allowed to be an official plugin. But I no longer wish to cater to people who cry "censorship" because somebody broke their toy that allowed them to see things they weren't supposed to.
 
 Developers were notified about the updated guidelines as early as [July 16th](https://github.com/BetterDiscord/docs/blob/3add40bdda0afbadc6c0af09d10413bbdee54f5f/src/plugins/introduction/guidelines.md). They have been in the works much earlier than that, and there were discussions about banning ShowHiddenChannels since pretty much as long as that plugin existed.
 
