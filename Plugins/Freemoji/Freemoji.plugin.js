@@ -1,14 +1,12 @@
 /**
 * @name Freemoji
-* @displayName Freemoji
+* @displayName Freemoji - Discontinued
 * @description Send emoji external emoji and animated emoji without Nitro.
 * @author Qb, An0
 * @authorId 133659541198864384
 * @license LGPLv3 - https://www.gnu.org/licenses/lgpl-3.0.txt
-* @version 1.7.3
-* @invite gj7JFa6mF8
+* @version 1.8.0
 * @source https://github.com/QbDesu/BetterDiscordAddons/blob/potato/Plugins/Freemoji
-* @updateUrl https://raw.githubusercontent.com/QbDesu/BetterDiscordAddons/potato/Plugins/Freemoji/Freemoji.plugin.js
 */
 /*@cc_on
 @if (@_jscript)
@@ -33,13 +31,16 @@ module.exports = (() => {
                     github_username: 'An00nymushun'
                 }
             ],
-            version: '1.7.3',
-            description: 'Send emoji external emoji and animated emoji without Nitro.',
-            github: 'https://github.com/QbDesu/BetterDiscordAddons/blob/potato/Plugins/Freemoji',
-            github_raw: 'https://raw.githubusercontent.com/QbDesu/BetterDiscordAddons/potato/Plugins/Freemoji/Freemoji.plugin.js'
+            version: '1.8.0',
+            description: 'Send emoji external emoji and animated emoji without Nitro. - Discontinued as of September 8th, 2022',
+            github: 'https://github.com/QbDesu/BetterDiscordAddons/blob/potato/Plugins/Freemoji'
         },
         changelog: [
-            { title: 'Bug Fixes', types: 'fixed', items: ['Stopped clyde from warining your about using unavailable emoji.'] }
+            { title: 'Discontinuation', types: 'fixed', items: ['The plugin was discontinued and will receive no further updates.'] },
+            { title: 'Features', types: 'added', items: [
+                'Message splitting was reworked and now has more options thanks to FrostBird347',
+                'A much requested option to replace the WebP file extension with PNG was added, also thanks to FrostBird347'
+            ] }
         ],
         defaultConfig: [
             {
@@ -78,10 +79,10 @@ module.exports = (() => {
                 id: 'splitLimit',
                 name: 'Split Message Limit',
                 note: 'Prevent the user from sending more than this many split messages at once. This setting and the one below is disabled if the value is set to zero.',
-                value: 4,
-                markers: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
+                value: 6,
+                markers: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12],
                 stickToMarkers: true,
-                defaultValue: 4
+                defaultValue: 6
             },
             {
                 type: 'dropdown',
@@ -106,7 +107,7 @@ module.exports = (() => {
                 name: 'Emoji Size',
                 note: 'The size of the emoji in pixels. 48 is recommended because it is the size of regular Discord emoji.',
                 value: 48,
-                markers: [32, 40, 48, 60, 64, 80, 96],
+                markers: [32, 40, 44, 48, 56, 60, 64, 80, 96],
                 defaultValue: 48,
                 stickToMarkers: true
             },
@@ -183,17 +184,18 @@ module.exports = (() => {
         ]
     };
     return !global.ZeresPluginLibrary ? class {
-        constructor() { this._config = config; }
-        load() {
-            BdApi.showConfirmationModal('Library plugin is needed',
+        constructor() {
+            BdApi.showConfirmationModal("Library plugin is needed",
                 [`The library plugin needed for ${config.info.name} is missing. Please click Download Now to install it.`], {
-                confirmText: 'Download',
-                cancelText: 'Cancel',
+                confirmText: "Download",
+                cancelText: "Cancel",
                 onConfirm: () => {
-                    require('request').get('https://rauenzi.github.io/BDPluginLibrary/release/0PluginLibrary.plugin.js', async (error, response, body) => {
-                        if (error) return require('electron').shell.openExternal('https://betterdiscord.app/Download?id=9');
-                        await new Promise(r => require('fs').writeFile(require('path').join(BdApi.Plugins.folder, '0PluginLibrary.plugin.js'), body, r));
-                        window.location.reload();
+                    require("request").get("https://rauenzi.github.io/BDPluginLibrary/release/0PluginLibrary.plugin.js", async (error, response, body) => {
+                        if (error) return require("electron").shell.openExternal("https://betterdiscord.app/Download?id=9");
+                        await new Promise(r => {
+                            require("fs").writeFile(require("path").join(BdApi.Plugins.folder, "0PluginLibrary.plugin.js"), body, r);
+                            window.location.reload();
+                        });
                     });
                 }
             });
@@ -208,6 +210,7 @@ module.exports = (() => {
                     WebpackModules,
                     Toasts,
                     Logger,
+                    Utilities,
                     DiscordModules: {
                         Permissions,
                         DiscordPermissions,
@@ -220,13 +223,13 @@ module.exports = (() => {
                         }
                     }
                 } = Api;
+                const ComponentDispatch = WebpackModules.getByProps("ComponentDispatch")?.ComponentDispatch;
 
                 const Emojis = WebpackModules.findByUniqueProperties(['getDisambiguatedEmojiContext', 'searchWithoutFetchingLatest']);
                 const EmojiParser = WebpackModules.findByUniqueProperties(['parse', 'parsePreprocessor', 'unparse']);
                 const EmojiPicker = WebpackModules.findByUniqueProperties(['useEmojiSelectHandler']);
                 const MessageUtilities = WebpackModules.getByProps("sendMessage");
                 const EmojiFilter = WebpackModules.getByProps('getEmojiUnavailableReason');
-                const SlateEditor = WebpackModules.findByDisplayName('SlateEditor');
 
                 const EmojiPickerListRow = WebpackModules.find(m => m?.default?.displayName == 'EmojiPickerListRow');
 
@@ -235,6 +238,28 @@ module.exports = (() => {
 
                 return class Freemoji extends Plugin {
                     currentUser = null;
+                    
+                    constructor() {
+                        super(...arguments);
+
+                        (window||globalThis).setTimeout(() => {
+                            if (!Utilities.loadData(this.getName(), "discontinuationNoticeDismissed", false)) {
+                                BdApi.showConfirmationModal("Discontinuation", `## As of September 8th, 2022 the Freemoji plugin is discontinued. The plugin will not receive any further updates - if it breaks it stays broken.
+
+The main reason for that is my disappointment and disgust upon seeing some of the reactions and hate coming from the community following the recent guideline updates and the discontinuation of the ShowHiddenChannels plugin. The reason is not the updated guidelines, but the obnoxious community.
+                        
+## You can read more details about that here: https://github.com/QbDesu/BetterDiscordAddons/blob/potato/Plugins/Freemoji/DISCONTINUATION.md
+                        
+You may choose to **delete the plugin now** or **dismiss this notice to not be bothered again** and continue using it.`, {
+                                    danger:true,
+                                    onCancel: ()=>{Utilities.saveData(this.getName(), "discontinuationNoticeDismissed", true);},
+                                    cancelText:"Dismiss, and continue using Freemoji",
+                                    onConfirm: ()=>{require("fs").unlinkSync(require("path").join(BdApi.Plugins.folder, "Freemoji.plugin.js"));},
+                                    confirmText: "Delete"
+                                });
+                            }
+                        }, 1000);
+                    }
 
                     replaceEmoji(text, emoji) {
                         const emojiString = `<${emoji.animated ? "a" : ""}:${emoji.originalName || emoji.name}:${emoji.id}>`;
@@ -244,167 +269,190 @@ module.exports = (() => {
 
                     patch() {
                         // make emote pretend locked emoji are unlocked
+                        Emojis?.searchWithoutFetchingLatest &&
                         Patcher.after(Emojis, 'searchWithoutFetchingLatest', (_, args, ret) => {
-                            ret.unlocked = ret.unlocked.concat(ret.locked);
-                            ret.locked.length = [];
-                            return ret;
+                            try {
+                                ret.unlocked = ret.unlocked.concat(ret.locked);
+                                ret.locked.length = [];
+                                return ret;
+                            } catch(_) {}
                         });
 
                         // replace emoji with links in messages
+                        (EmojiParser?.parse || Logger.error("EmojiParser?.parse")) &&
                         Patcher.after(EmojiParser, 'parse', (_, args, ret) => {
-                            for (const emoji of ret.invalidEmojis) {
-                                ret.content = this.replaceEmoji(ret.content, emoji);
-                            }
-                            ret.invalidEmojis = [];
-                            
-                            for (const emoji of ret.validNonShortcutEmojis) {
-                                if (!emoji.available) {
+                            try {
+                                for (const emoji of ret.invalidEmojis) {
                                     ret.content = this.replaceEmoji(ret.content, emoji);
                                 }
-                            }
-                            if (this.settings.external) {
+                                ret.invalidEmojis = [];
+
                                 for (const emoji of ret.validNonShortcutEmojis) {
-                                    if (this.getEmojiUnavailableReason(emoji) === EmojiDisabledReasons.DISALLOW_EXTERNAL) {
+                                    if (!emoji.available) {
                                         ret.content = this.replaceEmoji(ret.content, emoji);
                                     }
                                 }
-                            }
-                            return ret;
+                                if (this.settings.external) {
+                                    for (const emoji of ret.validNonShortcutEmojis) {
+                                        if (this.getEmojiUnavailableReason(emoji) === EmojiDisabledReasons.DISALLOW_EXTERNAL) {
+                                            ret.content = this.replaceEmoji(ret.content, emoji);
+                                        }
+                                    }
+                                }
+                                return ret;
+                            } catch(_) {}
                         });
 
                         // override emoji picker to allow selecting emotes
+                        (EmojiPicker?.useEmojiSelectHandler || Logger.error("EmojiPicker?.useEmojiSelectHandler")) &&
                         Patcher.after(EmojiPicker, 'useEmojiSelectHandler', (_, args, ret) => {
-                            const { onSelectEmoji, closePopout, selectedChannel } = args[0];
-                            const self = this;
-
-                            return function (data, state) {
-                                if (state.toggleFavorite) return ret.apply(this, arguments);
-
-                                const emoji = data.emoji;
-                                const isFinalSelection = state.isFinalSelection;
-
-                                if (self.getEmojiUnavailableReason(emoji, selectedChannel) === EmojiDisabledReasons.DISALLOW_EXTERNAL) {
-                                    if (self.settings.external == 'off') return;
-
-                                    if (self.settings.external == 'showDialog') {
-                                        BdApi.showConfirmationModal(
-                                            "Sending External Emoji",
-                                            [`It looks like you are trying to send an an External Emoji in a server that would normally allow it. Do you still want to send it?`], {
-                                            confirmText: "Send External Emoji",
-                                            cancelText: "Cancel",
-                                            onConfirm: () => {
-                                                self.selectEmoji({ emoji, isFinalSelection, onSelectEmoji, selectedChannel, closePopout, disabled: true });
-                                            }
-                                        });
-                                        return;
-                                    }
-                                    self.selectEmoji({ emoji, isFinalSelection, onSelectEmoji, closePopout, selectedChannel, disabled: true });
-                                } else if (!emoji.available) {
-                                    self.selectEmoji({ emoji, isFinalSelection, onSelectEmoji, closePopout, selectedChannel, disabled: true });
-                                } else {
-                                    self.selectEmoji({ emoji, isFinalSelection, onSelectEmoji, closePopout, selectedChannel, disabled: data.isDisabled });
-                                }
-                            }
-                        });
-
-                        Patcher.after(EmojiFilter, 'getEmojiUnavailableReason', (_, [{ intention, bypassPatch }], ret) => {
-                            if (intention !== EmojiIntention.CHAT || bypassPatch || !this.settings.external) return;
-                            return ret === EmojiDisabledReasons.DISALLOW_EXTERNAL ? null : ret;
-                        });
-
-                        Patcher.before(EmojiPickerListRow, 'default', (_, [{ emojiDescriptors }]) => {
-                            if (this.settings.removeGrayscale == 'never') return;
-                            if (this.settings.removeGrayscale != 'always' && !this.hasEmbedPerms()) return;
-                            emojiDescriptors.filter(e => e.isDisabled).forEach(e => { e.isDisabled = false; e.wasDisabled = true; });
-                        });
-                        Patcher.after(EmojiPickerListRow, 'default', (_, [{ emojiDescriptors }]) => {
-                            emojiDescriptors.filter(e => e.wasDisabled).forEach(e => { e.isDisabled = true; delete e.wasDisabled; });
-                        });
-
-                        Patcher.after(SlateEditor.prototype, 'handleOnChange', (ThisEditor, args, ret) => {
-                            this.LastEditor = [ThisEditor.props.editor, ThisEditor.props.channelId];
-                        })
-
-                        BdApi.Plugins.isEnabled("EmoteReplacer") || Patcher.instead(MessageUtilities, 'sendMessage', (thisObj, args, originalFn) => {
-                            if (!this.settings.split || BdApi.Plugins.isEnabled("EmoteReplacer")) return originalFn.apply(thisObj, args);
-                            const [channel, message] = args;
-                            const split = message.content.split(EMOJI_SPLIT_LINK_REGEX).map(s => s.trim()).filter(s => s.length);
-                            if (split.length <= 1) return originalFn.apply(thisObj, args);
-
-                            const promises = [];
-                            let finalSplitDelay = this.settings.splitDelay;
                             try {
-                                finalSplitDelay = BdApi.findModuleByProps("getChannel", "getDMFromUserId").getChannel(this.LastEditor[1]).rateLimitPerUser * 1000 + this.settings.splitDelay;
-                            } catch {}
+                                const { onSelectEmoji, closePopout, selectedChannel } = args[0];
+                                const self = this;
 
-                            for (let i = 0; i < split.length; i++) {
-                                const text = [split[i]];
-                                if (this.settings.splitLimit != 0 && i > this.settings.splitLimit - 1) {
-                                    i++;
-                                    while (i < split.length) {
-                                        text.push(split[i]);
-                                        i++;
-                                    }
-                                }
+                                return function (data, state) {
+                                    if (state.toggleFavorite) return ret.apply(this, arguments);
 
-                                if (i == 0 && args[3].messageReference != undefined) {
-                                    var firstMessage = message;
-                                    firstMessage.content = text.join('\n').trim();
-                                    args.message = firstMessage;
-                                    originalFn.apply(thisObj, args);
-                                    continue;
-                                }
+                                    const emoji = data.emoji;
+                                    const isFinalSelection = state.isFinalSelection;
 
-                                if (text.join('\n').trim() != "") {
-                                    if (this.settings.splitLimitMode && i > this.settings.splitLimit - 1) {
-                                        if (this.LastEditor != undefined) {
-                                            setTimeout(this.LastEditor[0].insertText, this.settings.splitLimit * finalSplitDelay, text.join('\n').trim());
-                                        } else {
-                                            console.error("Unable to return text because this.LastEditor is undefined!");
+                                    if (self.getEmojiUnavailableReason(emoji, selectedChannel) === EmojiDisabledReasons.DISALLOW_EXTERNAL) {
+                                        if (self.settings.external == 'off') return;
+
+                                        if (self.settings.external == 'showDialog') {
+                                            BdApi.showConfirmationModal(
+                                                "Sending External Emoji",
+                                                [`It looks like you are trying to send an an External Emoji in a server that would normally allow it. Do you still want to send it?`], {
+                                                confirmText: "Send External Emoji",
+                                                cancelText: "Cancel",
+                                                onConfirm: () => {
+                                                    self.selectEmoji({ emoji, isFinalSelection, onSelectEmoji, selectedChannel, closePopout, disabled: true });
+                                                }
+                                            });
+                                            return;
                                         }
+                                        self.selectEmoji({ emoji, isFinalSelection, onSelectEmoji, closePopout, selectedChannel, disabled: true });
+                                    } else if (!emoji.available) {
+                                        self.selectEmoji({ emoji, isFinalSelection, onSelectEmoji, closePopout, selectedChannel, disabled: true });
                                     } else {
-                                        promises.push(new Promise((resolve, reject) => {
-                                            window.setTimeout(() => {
-                                                originalFn.call(thisObj, channel, { content: text.join('\n').trim(), validNonShortcutEmojis: [] }).then(resolve).catch(reject);
-                                            }, i * finalSplitDelay);
-                                        }));
+                                        self.selectEmoji({ emoji, isFinalSelection, onSelectEmoji, closePopout, selectedChannel, disabled: data.isDisabled });
                                     }
                                 }
-                            }
-                            return Promise.all(promises).then(ret => ret[ret.length - 1]);
+                            } catch(_) {}
                         });
+
+                        (EmojiFilter?.getEmojiUnavailableReason || Logger.error("EmojiFilter?.getEmojiUnavailableReason")) &&
+                        Patcher.after(EmojiFilter, 'getEmojiUnavailableReason', (_, [{ intention, bypassPatch }], ret) => {
+                            try {
+                                if (intention !== EmojiIntention.CHAT || bypassPatch || !this.settings.external) return;
+                                return ret === EmojiDisabledReasons.DISALLOW_EXTERNAL ? null : ret;
+                            } catch(_) {}
+                        });
+
+                        EmojiPickerListRow?.default &&
+                        Patcher.before(EmojiPickerListRow, 'default', (_, [{ emojiDescriptors }]) => {
+                            try {
+                                if (this.settings.removeGrayscale == 'never') return;
+                                if (this.settings.removeGrayscale != 'always' && !this.hasEmbedPerms()) return;
+                                emojiDescriptors.filter(e => e.isDisabled).forEach(e => { e.isDisabled = false; e.wasDisabled = true; });
+                            } catch(_) {}
+                        });
+                        EmojiPickerListRow?.default &&
+                        Patcher.after(EmojiPickerListRow, 'default', (_, [{ emojiDescriptors }]) => {
+                            try {
+                                emojiDescriptors.filter(e => e.wasDisabled).forEach(e => { e.isDisabled = true; delete e.wasDisabled; });
+                            } catch(_) {}
+                        });
+
+                        //Prevent know bug causing duplicate messages due to an interaction with EmoteReplacer
+                        BdApi.Plugins.isEnabled("EmoteReplacer") ||
+                        (MessageUtilities?.sendMessage &&
+                        Patcher.instead(MessageUtilities, 'sendMessage', (thisObj, args, originalFn) => {
+                            try {
+                                if (!this.settings.split || BdApi.Plugins.isEnabled("EmoteReplacer")) return originalFn.apply(thisObj, args);
+                                const [channel, message] = args;
+                                const split = message.content.split(EMOJI_SPLIT_LINK_REGEX).map(s => s.trim()).filter(s => s.length);
+                                if (split.length <= 1) return originalFn.apply(thisObj, args);
+
+                                const promises = [];
+                                const rateLimit = ChannelStore.getChannel(SelectedChannelStore.getChannelId())?.rateLimitPerUser || 0;
+                                const splitDelay = rateLimit * 1000 + this.settings.splitDelay;
+
+                                for (let i = 0; i < split.length; i++) {
+                                    const text = [split[i]];
+                                    if (this.settings.splitLimit != 0 && i > this.settings.splitLimit - 1) {
+                                        i++;
+                                        while (i < split.length) {
+                                            text.push(split[i]);
+                                            i++;
+                                        }
+                                    }
+
+                                    if (i == 0 && args[3].messageReference != undefined) {
+                                        var firstMessage = message;
+                                        firstMessage.content = text.join('\n').trim();
+                                        args.message = firstMessage;
+                                        originalFn.apply(thisObj, args);
+                                        continue;
+                                    }
+
+                                    if (text.join('\n').trim() != "") {
+                                        if (this.settings.splitLimitMode && i > this.settings.splitLimit - 1) {
+                                            setTimeout(() => {
+                                                ComponentDispatch.dispatch("INSERT_TEXT", {
+                                                    plainText: text.join('\n').trim()
+                                                })
+                                            }, this.settings.splitLimit * splitDelay);
+
+                                        } else {
+                                            promises.push(new Promise((resolve, reject) => {
+                                                window.setTimeout(() => {
+                                                    originalFn.call(thisObj, channel, { content: text.join('\n').trim(), validNonShortcutEmojis: [] }).then(resolve).catch(reject);
+                                                }, i * splitDelay);
+                                            }));
+                                        }
+                                    }
+                                }
+                                return Promise.all(promises).then(ret => ret[ret.length - 1]);
+                            } catch(_) {}
+                        }));
                     }
 
                     selectEmoji({ emoji, isFinalSelection, onSelectEmoji, closePopout, selectedChannel, disabled }) {
-                        if (disabled) {
-                            const perms = this.hasEmbedPerms(selectedChannel);
-                            if (!perms && this.settings.missingEmbedPerms == 'nothing') return;
-                            if (!perms && this.settings.missingEmbedPerms == 'showDialog') {
-                                BdApi.showConfirmationModal(
-                                    "Missing Image Embed Permissions",
-                                    [`It looks like you are trying to send an Emoji using Freemoji but you dont have the permissions to send embeded images in this channel. You can choose to send it anyway but it will only show as a link.`], {
-                                    confirmText: "Send Anyway",
-                                    cancelText: "Cancel",
-                                    onConfirm: () => {
-                                        if (this.settings.sendDirectly) {
-                                            MessageUtilities.sendMessage(selectedChannel.id, { content: this.getEmojiUrl(emoji) });
-                                        } else {
-                                            onSelectEmoji(emoji, isFinalSelection);
+                        try {
+                            if (disabled) {
+                                const perms = this.hasEmbedPerms(selectedChannel);
+                                if (!perms && this.settings.missingEmbedPerms == 'nothing') return;
+                                if (!perms && this.settings.missingEmbedPerms == 'showDialog') {
+                                    BdApi.showConfirmationModal(
+                                        "Missing Image Embed Permissions",
+                                        [`It looks like you are trying to send an Emoji using Freemoji but you dont have the permissions to send embeded images in this channel. You can choose to send it anyway but it will only show as a link.`], {
+                                        confirmText: "Send Anyway",
+                                        cancelText: "Cancel",
+                                        onConfirm: () => {
+                                            if (this.settings.sendDirectly) {
+                                                MessageUtilities.sendMessage(selectedChannel.id, { content: this.getEmojiUrl(emoji) });
+                                            } else {
+                                                onSelectEmoji(emoji, isFinalSelection);
+                                            }
                                         }
-                                    }
-                                });
-                                return;
-                            }
-                            if (this.settings.sendDirectly) {
-                                MessageUtilities.sendMessage(SelectedChannelStore.getChannelId(), { content: this.getEmojiUrl(emoji) });
+                                    });
+                                    return;
+                                }
+                                if (this.settings.sendDirectly) {
+                                    MessageUtilities.sendMessage(SelectedChannelStore.getChannelId(), { content: this.getEmojiUrl(emoji) });
+                                } else {
+                                    onSelectEmoji(emoji, isFinalSelection);
+                                }
                             } else {
                                 onSelectEmoji(emoji, isFinalSelection);
                             }
-                        } else {
-                            onSelectEmoji(emoji, isFinalSelection);
-                        }
 
-                        if (isFinalSelection) closePopout();
+                            if (isFinalSelection) closePopout();
+                        } catch (e) {
+                            Logger.error("An error occured while trying to select the emoji.", e);
+                            return true;
+                        }
                     }
 
                     getEmojiUnavailableReason(emoji, channel, intention) {
@@ -417,13 +465,18 @@ module.exports = (() => {
                     }
 
                     getEmojiUrl(emoji) {
-                        var finalEmojiURL = emoji.url;
-                        if (this.settings.replacePNG) {
-                            finalEmojiURL = finalEmojiURL.replace(".webp?", ".png?");
-                        }
-                        return finalEmojiURL.includes("size=") ?
-                            finalEmojiURL.replace(SIZE_REGEX, `$1${this.settings.emojiSize}`) :
-                            `${finalEmojiURL}&size=${this.settings.emojiSize}`;
+                        try {
+                            let finalEmojiURL = emoji.url;
+                            if (this.settings.replacePNG) {
+                                finalEmojiURL = finalEmojiURL.replace(".webp?", ".png?");
+                            }
+                            return finalEmojiURL.includes("size=") ?
+                                finalEmojiURL.replace(SIZE_REGEX, `$1${this.settings.emojiSize}`) :
+                                `${finalEmojiURL}&size=${this.settings.emojiSize}`;
+                        } catch(e) {
+                            Logger.error("Error while getting emoji url, enjoy :zerezoom: instead.", e);
+                            return `https://cdn.discordapp.com/emojis/767805326807924746.webp?quality=lossless&size=${this.settings.emojiSize}`;
+                        } 
                     }
 
                     hasEmbedPerms(channelParam) {
@@ -431,7 +484,7 @@ module.exports = (() => {
                             if (!this.currentUser) this.currentUser = UserStore.getCurrentUser();
                             const channel = channelParam || ChannelStore.getChannel(SelectedChannelStore.getChannelId());
                             if (!channel.guild_id) return true;
-                            return Permissions.can({permission: DiscordPermissions.EMBED_LINKS, user: this.currentUser.id, context: channel});
+                            return Permissions.can({ permission: DiscordPermissions.EMBED_LINKS, user: this.currentUser.id, context: channel });
                         } catch (e) {
                             Logger.error("Error while detecting embed permissions", e);
                             return true;
