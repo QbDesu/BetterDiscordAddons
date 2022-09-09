@@ -35,7 +35,7 @@ However, I want to thank GitHub user FrostBird347 for his recent contributions t
 
 I support entirely the BetterDiscord team and the updated guidelines that ban ShowHiddenChannels. I don't condemn DevilBro's handling of the update. Aside from DevilBro applying the update without user interaction, the mechanism he used has since been removed from BDFDB and will not happen again.
 
-Updating the BDFDB data file to remove the unused entries that ShowHiddenChannels previously used is also completely understandable. I would probably have done the same. Calling the way he handled the update malicious is nonsense. It didn't harm the user, and users are not entitled to have the plugin continue functioning. Malice would be stealing the user's account, or bricking their system.
+Updating the BDFDB data file to remove the unused entries that ShowHiddenChannels previously used is also completely understandable. I would probably have done the same. Calling the way he handled the update malicious is nonsense. It didn't harm the user, and users are not entitled to have the plugin continue functioning. Malice would be stealing the user's account or bricking their system.
 
 ## The Tinfoil Hats
 
@@ -56,4 +56,4 @@ The only official BetterDiscord channels are:
 
 ## PS.
 
-I completely forgot that EmoteReplacer exists. It's a well-made official plugin and a free emoji plugin, even if it works a bit differently from Freemoji. But I like the sass in the paragraph about BetterDiscord's supposed hypocrisy, so I'll leave it unchanged.
+I completely forgot that EmoteReplacer exists. It's a well-made official plugin and a free emoji plugin, even if it works differently from Freemoji. But I like the sass in the paragraph about BetterDiscord's supposed hypocrisy, so I'll leave it unchanged.
