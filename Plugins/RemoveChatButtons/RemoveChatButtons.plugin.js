@@ -4,7 +4,7 @@
 * @description Remove annoying buttons like the Gift button from the chat box.
 * @author Qb
 * @authorId 133659541198864384
-* @version 1.3.0
+* @version 1.3.1
 * @invite gj7JFa6mF8
 * @source https://github.com/QbDesu/BetterDiscordAddons/blob/potato/Plugins/RemoveChatButtons
 * @updateUrl https://raw.githubusercontent.com/QbDesu/BetterDiscordAddons/potato/Plugins/RemoveChatButtons/RemoveChatButtons.plugin.js
@@ -77,7 +77,7 @@ module.exports = (() => {
                     github_username: "QbDesu"
                 }
             ],
-            version: "1.3.0",
+            version: "1.3.1",
             description: "Remove annoying buttons like the Gift button from the chat box.",
             github: "https://github.com/QbDesu/BetterDiscordAddons/blob/potato/Plugins/RemoveChatButtons",
             github_raw: "https://raw.githubusercontent.com/QbDesu/BetterDiscordAddons/potato/Plugins/RemoveChatButtons/RemoveChatButtons.plugin.js"
@@ -193,6 +193,11 @@ module.exports = (() => {
                 return class RemoveChatButtons extends Plugin {
                     styler = new Styler("RemoveChatButtons");
 
+                    constructor() {
+                        super();
+                        this.refreshLocaleFn = this.refreshLocaleFn.bind(this);
+                    }
+
                     addStyles() {
                         if (Messages) {
                             const {PREMIUM_GIFT_BUTTON_LABEL, GIF_BUTTON_LABEL, PREMIUM_GUILD_BOOST_THIS_SERVER} = Messages;
@@ -231,18 +236,20 @@ module.exports = (() => {
                         Logger.info("Refreshed styles.")
                     }
 
+                    refreshLocaleFn() {
+                        // Doesn't seem to work... Messages still holds the old value for some reason.
+                        // Keeping this anyway for now.
+                        setTimeout(this.refreshStyles(), 1000);
+                    }
+
                     onStart() {
                         this.addStyles();
-                        LocaleManager.on("locale", () => {
-                            // Doesn't seem to work... Messages still holds the old value for some reason.
-                            // Keeping this anyway for now.
-                            setTimeout(this.refreshStyles(), 1000);
-                        })
+                        LocaleManager.on("locale", this.refreshLocaleFn);
                     }
 
                     onStop() {
                         this.styler.removeAll();
-                        Patcher.unpatchAll();
+                        LocaleManager.off("locale", this.refreshLocaleFn);
                     }
 
                     getSettingsPanel() {
