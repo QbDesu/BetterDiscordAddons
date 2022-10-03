@@ -4,10 +4,10 @@
 * @description Remove annoying buttons like the Gift button from the chat box.
 * @author Qb
 * @authorId 133659541198864384
-* @version 1.3.1
+* @version 1.3.2
 * @invite gj7JFa6mF8
-* @source https://github.com/QbDesu/BetterDiscordAddons/blob/potato/Plugins/RemoveChatButtons
-* @updateUrl https://raw.githubusercontent.com/QbDesu/BetterDiscordAddons/potato/Plugins/RemoveChatButtons/RemoveChatButtons.plugin.js
+* @source https://github.com/BleedingBD/plugin-RemoveChatButtons
+* @updateUrl https://raw.githubusercontent.com/BleedingBD/plugin-RemoveChatButtons/main/RemoveChatButtons.plugin.js
 */
 /*@cc_on
 @if (@_jscript)
@@ -77,10 +77,10 @@ module.exports = (() => {
                     github_username: "QbDesu"
                 }
             ],
-            version: "1.3.1",
+            version: "1.3.2",
             description: "Remove annoying buttons like the Gift button from the chat box.",
-            github: "https://github.com/QbDesu/BetterDiscordAddons/blob/potato/Plugins/RemoveChatButtons",
-            github_raw: "https://raw.githubusercontent.com/QbDesu/BetterDiscordAddons/potato/Plugins/RemoveChatButtons/RemoveChatButtons.plugin.js"
+            github: "https://github.com/BleedingBD/plugin-RemoveChatButtons",
+            github_raw: "https://raw.githubusercontent.com/BleedingBD/plugin-RemoveChatButtons/main/RemoveChatButtons.plugin.js"
         },
         defaultConfig: [
             {
@@ -142,8 +142,13 @@ module.exports = (() => {
         ],
         changelog: [
             {
-                title: "Fixes", type: "changed", items: [
+                title: "Fixes", type: "fixed", items: [
                     "Partial rewrite. Everything should work again."
+                ]
+            },
+            {
+                title: "Changes", type: "changed", items: [
+                    "Moved to a new GitHub repo."
                 ]
             }
         ]
@@ -191,7 +196,7 @@ module.exports = (() => {
                 const getTextAreaCssRule = child => `${channelTextAreaSelector||""} ${child} { display: none; }`;
 
                 return class RemoveChatButtons extends Plugin {
-                    styler = new Styler("RemoveChatButtons");
+                    styler = new Styler(config.info.name);
 
                     constructor() {
                         super();
