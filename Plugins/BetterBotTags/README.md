@@ -6,4 +6,4 @@ This plugin adds a few improvements to Discord's bot tags. It adds tag variants 
 
 ## Aknowledgements
 
-This is based on [Ben](https://github.com/BenSegal855)'s [webhook-tags plugin](https://github.com/BenSegal855/webhook-tag) for Powercord. As a result the MIT license of webhook-tags applies to this plugin.
+This was originally based on [Ben](https://github.com/BenSegal855)'s [webhook-tags plugin](https://github.com/BenSegal855/webhook-tag) for Powercord, even if none of the original code remains.
