@@ -248,7 +248,6 @@ module.exports = (() => {
                                 else if (channel.isForumPost() && channel.ownerId === user.id && !isRepliedMessage) type = BotTagTypes.ORIGINAL_POSTER;
                                 
                                 if (type==null) return;
-                                console.log(decorations);
                                 for (let key in decorations) {
                                     if (!decorations[key].props?.className?.includes("botTag")) continue;
                                     decorations[key] = (React.createElement(CustomBotTag, {
