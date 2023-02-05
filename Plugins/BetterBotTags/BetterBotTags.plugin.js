@@ -3,7 +3,7 @@
 * @description Some improvements for bot tags, like the addition of webhook tags.
 * @author Qb
 * @authorId 133659541198864384
-* @version 2.0.0
+* @version 2.0.1
 * @invite gj7JFa6mF8
 * @source https://github.com/QbDesu/BetterDiscordAddons/blob/potato/Plugins/BetterBotTags
 * @updateUrl https://raw.githubusercontent.com/QbDesu/BetterDiscordAddons/potato/Plugins/BetterBotTags/BetterBotTags.plugin.js
@@ -21,18 +21,14 @@ module.exports = (() => {
     const config = {
         info: {
             name: "BetterBotTags",
-            version: "2.0.0",
+            version: "2.0.1",
             github_raw: "https://raw.githubusercontent.com/QbDesu/BetterDiscordAddons/potato/Plugins/BetterBotTags/BetterBotTags.plugin.js"
         },
         changelog: [
             {
-                title: 'Changes', types: 'changed', items: [
-                    'Rewrote most of the plugin. Not everything is working again, but chat messages should be fine.',
-                ],
-            },
-            {
                 title: 'Bug Fixes', types: 'fixed', items: [
-                    'Made things work a little again.',
+                    'Fixed missing padding in replies and compact display.',
+                    'Fixed surplus space when icons are disabled.',
                 ],
             },
         ],
@@ -204,8 +200,7 @@ module.exports = (() => {
                             "span",
                             {
                                 className: joinClassNames(
-                                    botTagClasses.botTag,
-                                    compact ? botTagVariantClasses.botTagCompact : botTagClasses.botTagCozy,
+                                    (compact ? botTagClasses.botTagCompact : botTagClasses.botTagCozy) || botTagClasses.botTag,
                                     botTagVariantClasses.botTagRegular,
                                     botTagVariantClasses.rem,
                                     `${config.info.name}--BotTag--tag`,
@@ -215,14 +210,13 @@ module.exports = (() => {
                             [
                                 verified ? React.createElement(VerifiedHook, { width: 16, height: 16 }) : null,
                                 showIcon ? React.createElement(icon, { width: 16, height: 16 }) : null,
-                                showLabel ? `${showLabel ? "  " : ""}${BotTagTypes[type]}`: null
+                                showLabel ? `${showIcon ? "  " : ""}${BotTagTypes[type]}`: null
                             ]
                             
                         );
                     } catch (err) {
                         Logger.error("Error in CustomBotTag", err);
                     }
-                    
                 };
 
                 return class extends Plugin {
