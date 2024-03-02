@@ -3,7 +3,7 @@
 * @description Requires you to double click voice channels to join them.
 * @author Qb
 * @authorId 133659541198864384
-* @version 1.1.0
+* @version 1.2.0
 * @invite pKx8m6Z
 * @license Unlicensed
 * @source https://github.com/QbDesu/BetterDiscordAddons/blob/potato/Plugins/DoubleClickVoiceChannels
@@ -20,14 +20,19 @@ module.exports = (() => {
     const config = {
         info: {
             name: "DoubleClickVoiceChannels",
-            version: "1.1.0",
+            version: "1.2.0",
             github_raw: "https://raw.githubusercontent.com/QbDesu/BetterDiscordAddons/potato/Plugins/DoubleClickVoiceChannels/DoubleClickVoiceChannels.plugin.js"
         },
         changelog: [
             {
+                title: 'Changes',
+                type: 'changed',
+                items: ['Dropped support for voice channel mentions. Just the channel list is affected now.'],
+            },
+            {
                 title: 'Fixes',
                 type: 'fixed',
-                items: ['Finally got around to fixing the plugin after the big update a couple months ago... Sorry for the wait.'],
+                items: ['Fixed the plugin again, after a long time waiting, sorry.'],
             },
         ],
     };
@@ -55,28 +60,18 @@ module.exports = (() => {
         : (([Plugin, Api]) => {
             const plugin = (Plugin, Api) => {
                 const {
-                    WebpackModules,
                     Logger
                 } = Api;
                 const {
                     Patcher,
-                    Webpack: { Filters, getModule },
-                    Utils: { findInTree }
+                    Webpack: { getByKeys },
+                    Utils: { findInTree },
+                    UI: { showToast }
                 } = new BdApi(config.info.name);
 
+                const ChannelItem = [getByKeys('ChannelItemIcon'), "default"];
 
-                const getModuleAndKey = (filter) => {
-                    let module;
-                    const value = getModule((e, m) => filter(e) ? (module = m) : false, { searchExports: true });
-                    if (!module) return;
-                    return [module.exports, Object.keys(module.exports).find(k => module.exports[k] === value)];
-                };
-
-
-                const ChannelItem = getModuleAndKey(Filters.byStrings("canHaveDot", "unreadRelevant", "UNREAD_HIGHLIGHT"));
-                const ChatMessage = getModuleAndKey(Filters.byStrings("voice-locked", "VOICE_CHANNEL_LOCKED"));
-
-                return class GuildNotificationDefaults extends Plugin {
+                return class DoubleClickVoiceChannels extends Plugin {
                     constructor() {
                         super();
                         // remove need for duplication of metadata fields
@@ -85,30 +80,24 @@ module.exports = (() => {
                     }
 
                     async onStart() {
-                        Patcher.after(...ChannelItem, (_this, [{ channel }], value) => {
-                            if (channel?.type === 2 || channel?.type === 13) {
-                                const clickable = findInTree(value, (item) => item?.onClick && item.role === "button", { walkable: ["props", "children", "child", "sibling"] });
-                                if (clickable) {
-                                    clickable.onDoubleClick = clickable.onClick;
-                                    delete clickable.onClick;
-                                } else {
-                                    Logger.warn("Could not find clickable element for channel", channel);
+                        if (ChannelItem?.[0]){
+                            Patcher.after(...ChannelItem, (_this, [props], value) => {
+                                const { channel } = props;
+                                if (channel?.type === 2 || channel?.type === 13) {
+                                    const clickable = findInTree(value, (item) => item?.onClick && item.role === "button", { walkable: ["props", "children", "child", "sibling"] });
+                                    if (clickable) {
+                                        clickable.onDoubleClick = clickable.onClick;
+                                        delete clickable.onClick;
+                                    } else {
+                                        Logger.warn("Could not find clickable element for channel", channel);
+                                    }
                                 }
-                            }
 
-                            return value;
-                        });
-
-                        Patcher.after(...ChatMessage, (_this, [{ iconType }], value) => {
-                            if (iconType !== "voice") return;
-                            const clickable = findInTree(value, (item) => item?.onClick && item.role === "link", { walkable: ["props", "children", "child", "sibling"] });
-                            if (clickable) {
-                                clickable.onDoubleClick = clickable.onClick;
-                                delete clickable.onClick;
-                            } else {
-                                Logger.warn("Could not find clickable element for channel mention", value);
-                            }
-                        });
+                                return value;
+                            });
+                        } else {
+                            showToast(`[${config.info.name}] Could not find ChannelItem. Plugin will not work correctly.`);
+                        }
                     }
 
                     onStop() {
